@@ -1,5 +1,7 @@
 module Spiders
 
+import Base
+
 export Spider
 
 abstract type Spider end
@@ -7,7 +9,7 @@ abstract type Spider end
 struct PeriodicSpider{T<:Complex} <: Spider
     angle::Rational
     legs::Vector{Vector{T}}
-    itinterary::Vector{Any}
+    itinerary::Vector{Any}
 
     function PeriodicSpider(angle::Rational,orbit::Vector{<:Real})
         legs = standardlegs(orbit)
@@ -22,7 +24,7 @@ end
 struct PrePeriodicSpider{T<:Complex} <: Spider
     angle::Rational
     legs::Vector{Vector{T}}
-    itinterary::Vector{Any}
+    itinerary::Vector{Any}
     joint::Int
 
     function PrePeriodicSpider(angle::Rational,orbit::Vector{<:Real},joint::Int)
@@ -86,5 +88,7 @@ function Spider(theta::Rational)
         PrePeriodicSpider(theta,orb,joint)
     end
 end
+
+Base.show(io::IO, S::Spider) = display(hcat(S.itinerary, [round(leg[1],digits = 3) for leg in S.legs]))
 
 end
