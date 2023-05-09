@@ -35,13 +35,30 @@ struct KneadingSequence
 
         joint = findall(x->x==angle,orb)[1]
 
-        new(orb, theta_itinerary, joint)
+        return new(orb, theta_itinerary, joint)
     end
 end
 
 struct SpiderLegs{T<:Complex}
     legs::Vector{Vector{T}}
-    boundary::Vector{T}
+    boundary::Vector{ComplexF64}
+
+    #Standard constructor
+    function SpiderLegs(legs::Vector{Vector{ComplexF64}},boundary::Vector{ComplexF64})
+        return new{ComplexF64}(legs,boundary)
+    end
+
+    #Constructor which creates "default legs" from an orbit
+    function SpiderLegs(orbit::Vector{<:Real})
+        legs = Vector{ComplexF64}[]
+        r = collect(LinRange(1,1000,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
+        for angle in orbit
+            push!(legs,r.*exp(1.0im*2*pi*angle).-exp(1.0im*2*pi*orbit[1]))
+        end
+        boundary::Vector{ComplexF64} = []
+        return new{ComplexF64}(legs,boundary)
+    end
+
 end
 
 function shoot!(S::SpiderLegs,scale::Real,num::Int)
@@ -55,46 +72,12 @@ function shoot!(S::SpiderLegs,scale::Real,num::Int)
     end
 end
 
-function orbit(theta::Rational)
-    orb = Rational{Int64}[]
-    angle = theta
-        while isempty(findall(x->x==angle,orb))
-            push!(orb,angle)
-            angle = angle*2
-            angle = angle%1//1
-        end
-    joint = findall(x->x==angle,orb)[1]
-    return orb,joint
+function info(SL::SpiderLegs)
+    radius = sqrt(abs2(SL.legs[1][end]))
+    length = length(SL.legs[1])
+    λ = SL.legs[2][1]
+    println(λ)
 end
-
-function itinerary(theta::Real,orbit::Vector{<:Real})
-    star_2 = theta/2
-    star_1 = (theta+1)/2
-    theta_itinerary = Any[]
-    for angle in orbit
-        if angle == star_1
-            push!(theta_itinerary,1)
-        elseif angle == star_2
-            push!(theta_itinerary,2)
-        elseif angle > star_2 && angle < star_1
-            push!(theta_itinerary,"A")
-        else
-            push!(theta_itinerary,"B")
-        end
-    end
-    return theta_itinerary
-end
-
-function standardlegs(orbit::Vector{<:Real})
-    legs = Vector{ComplexF64}[]
-    r = collect(LinRange(1,1000,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
-    for angle in orbit
-        push!(legs,r.*exp(1.0im*2*pi*angle).-exp(1.0im*2*pi*orbit[1]))
-    end
-    boundary::Vector{ComplexF64} = []
-    return SpiderLegs(legs,boundary)
-end
-
 
 function spider_map(S::SpiderLegs,K::KneadingSequence)
 

@@ -2,10 +2,10 @@ using Plots
 
 include("Spiders.jl")
 
-K = KneadingSequence(5//14)
+K = KneadingSequence(7//48)
 frames = 20
 
-list = [standardlegs(K.orbit)]
+list = [SpiderLegs(K.orbit)]
 
 
 for i in 1:frames-1
@@ -17,8 +17,8 @@ end
 @userplot SpiderPlot
 @recipe function f(sp::SpiderPlot)
     list, i = sp.args
-    xlim --> (-4,2)
-    ylim --> (-3,3)
+    xlim --> (-5,3)
+    ylim --> (-4,4)
     aspect_ratio --> 1
     real(list[i].legs), imag(list[i].legs)
 end
