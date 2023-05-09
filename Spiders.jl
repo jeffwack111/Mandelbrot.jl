@@ -2,7 +2,7 @@ import Base
 using IterTools
 include("SpiderFuncs.jl")
 
-#Do we need PrePeriodicKneadingSequence and PeriodicKneadingSequence as separate types?
+#Shoulde we have PrePeriodicKneadingSequence and PeriodicKneadingSequence as separate types?
 struct KneadingSequence
     orbit::Vector{Rational}
     itinerary::Vector{Any}
@@ -36,6 +36,22 @@ struct KneadingSequence
         joint = findall(x->x==angle,orb)[1]
 
         new(orb, theta_itinerary, joint)
+    end
+end
+
+struct SpiderLegs{T<:Complex}
+    legs::Vector{Vector{T}}
+    boundary::Vector{T}
+end
+
+function shoot!(S::SpiderLegs,scale::Real,num::Int)
+    for leg in S.legs
+        #Get the arrow pointing from the second to last point to the last point
+        arrow = scale*(leg[end]-leg[end-1])
+        #add new elements which are the last element plus the arrow
+        for i in 1:num
+            append!(leg,leg[end]+arrow)
+        end
     end
 end
 
@@ -75,18 +91,20 @@ function standardlegs(orbit::Vector{<:Real})
     for angle in orbit
         push!(legs,r.*exp(1.0im*2*pi*angle).-exp(1.0im*2*pi*orbit[1]))
     end
-    return legs
+    boundary::Vector{ComplexF64} = []
+    return SpiderLegs(legs,boundary)
 end
 
-function spider_map(legs::Vector{Vector{ComplexF64}},K::KneadingSequence)
+
+function spider_map(S::SpiderLegs,K::KneadingSequence)
 
     newLegs = Vector{ComplexF64}[]
 
-    λ = legs[2][1]
+    λ = S.legs[2][1]
 
     #first calculate the two lifts of the 1st leg
 
-    first_leg = legs[1]
+    first_leg = S.legs[1]
     boundary_one = lift_path(first_leg,λ,1)
     boundary_two = lift_path(first_leg,λ,-1)
 
@@ -102,13 +120,13 @@ function spider_map(legs::Vector{Vector{ComplexF64}},K::KneadingSequence)
 
     for i in 1:n-1
         #first we will calculate an image of the foot, and determine if this point is in the correct region
-        z = P_inv(legs[i+1][1],λ,1)
+        z = P_inv(S.legs[i+1][1],λ,1)
         #the function 'region' tells us which region the point is in
         #the kneading sequence tells us which region the point should be in
         if region(z,boundary) == K.itinerary[i]
-            push!(newLegs,lift_path(legs[i+1],λ,1))
+            push!(newLegs,lift_path(S.legs[i+1],λ,1))
         else
-            push!(newLegs,lift_path(legs[i+1],λ,-1))
+            push!(newLegs,lift_path(S.legs[i+1],λ,-1))
         end
     end
 
@@ -116,14 +134,18 @@ function spider_map(legs::Vector{Vector{ComplexF64}},K::KneadingSequence)
     if K.joint == 1
         #Periodic stuff
     else
-        z = P_inv(legs[K.joint][1],λ,1)
+        z = P_inv(S.legs[K.joint][1],λ,1)
         if region(z,boundary) == K.itinerary[n]
-            push!(newLegs,lift_path(legs[K.joint],λ,1))
+            push!(newLegs,lift_path(S.legs[K.joint],λ,1))
         else
-            push!(newLegs,lift_path(legs[K.joint],λ,-1))
+            push!(newLegs,lift_path(S.legs[K.joint],λ,-1))
         end
     end
 
-    return newLegs, boundary
+    SL = SpiderLegs(newLegs,boundary)
+
+    shoot!(SL,10,10)
+
+    return SL
 
 end
