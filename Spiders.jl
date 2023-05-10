@@ -73,10 +73,13 @@ function shoot!(S::SpiderLegs,scale::Real,num::Int)
 end
 
 function info(SL::SpiderLegs)
-    radius = sqrt(abs2(SL.legs[1][end]))
-    length = length(SL.legs[1])
+    println("~~~~~~~~~~~~~~~~~~~~")
     λ = SL.legs[2][1]
     println(λ)
+    len = length(SL.legs[1])
+    println(len)
+    radius = sqrt(abs2(SL.legs[1][end]))
+    println(radius)
 end
 
 function spider_map(S::SpiderLegs,K::KneadingSequence)
@@ -128,6 +131,7 @@ function spider_map(S::SpiderLegs,K::KneadingSequence)
     SL = SpiderLegs(newLegs,boundary)
 
     shoot!(SL,10,10)
+    info(SL)
 
     return SL
 

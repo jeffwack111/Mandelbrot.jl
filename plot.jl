@@ -2,7 +2,7 @@ using Plots
 
 include("Spiders.jl")
 
-K = KneadingSequence(7//48)
+K = KneadingSequence(1//6)
 frames = 20
 
 list = [SpiderLegs(K.orbit)]
