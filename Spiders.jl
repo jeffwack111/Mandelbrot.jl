@@ -61,7 +61,7 @@ struct SpiderLegs{T<:Complex}
 
 end
 
-function shoot!(S::SpiderLegs,scale::Real,num::Int)
+function grow!(S::SpiderLegs,scale::Real,num::Int)
     for leg in S.legs
         #Get the arrow pointing from the second to last point to the last point
         arrow = scale*(leg[end]-leg[end-1])
@@ -72,10 +72,13 @@ function shoot!(S::SpiderLegs,scale::Real,num::Int)
     end
 end
 
+function prune!()
+end
+
 function info(SL::SpiderLegs)
     println("~~~~~~~~~~~~~~~~~~~~")
     λ = SL.legs[2][1]
-    println(λ)
+    println(λ/2)
     len = length(SL.legs[1])
     println(len)
     radius = sqrt(abs2(SL.legs[1][end]))
@@ -118,7 +121,21 @@ function spider_map(S::SpiderLegs,K::KneadingSequence)
 
     #Now we take care of the last leg, which depends on preperiodic or not
     if K.joint == 1
-        #Periodic stuff
+        theta_one = atan(real(boundary_one[end]),imag(boundary_one[end]))
+        theta_two = atan(real(boundary_two[end]),imag(boundary_two[end]))
+        if theta_one > theta_two
+            if K.itinerary[end] == 1
+                push!(newLegs,boundary_one) 
+            else
+                push!(newLegs,boundary_two)
+            end
+        else
+            if K.itinerary[end] == 1
+                push!(newLegs,boundary_two) 
+            else
+                push!(newLegs,boundary_one)
+            end
+        end  
     else
         z = P_inv(S.legs[K.joint][1],λ,1)
         if region(z,boundary) == K.itinerary[n]
@@ -130,7 +147,7 @@ function spider_map(S::SpiderLegs,K::KneadingSequence)
 
     SL = SpiderLegs(newLegs,boundary)
 
-    shoot!(SL,10,10)
+    grow!(SL,10,10)
     info(SL)
 
     return SL
