@@ -1,6 +1,6 @@
 include("Spiders.jl")
 
-θ = 3//11
+θ = 15//17
 K = KneadingSequence(θ)
 frames = 50
 
