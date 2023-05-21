@@ -1,46 +1,33 @@
 using Images
 using ColorSchemes
 using ImageView
+include("MakePatch.jl")
 
-function mandelbrot_patch(A::Complex, B::Complex, scale::Real)
-    #Overall strategy: 
-    #we will first compute the patch at the correct scale and orientation, centered at the origin
-    #we will then translate the patch to to correct location and return it
-
-    center = 0.5*(A + B) 
-    #The center of the patch
-
-    to_side = scale*(A - B) 
-    #The complex number which points from the origin to the right side of the origin-centered patch
-
-    to_top = 1.0im*to_side
-    #points from the origin to the top of the frame
-
-    horizontal_axis = LinRange(-to_side,to_side,1000)
-    vertical_axis = LinRange(-to_top,to_top,1000)
-
-    origin_patch = transpose(horizontal_axis) .+ vertical_axis
-    #we want a matrix whose i,jth element is H[i] + V[j]
-
-    return origin_patch .+ center
+struct EscapeTimeProblem
+    z0::Number
+    f::Function
+    R2::Real
+    max_iter::Int
 end
 
+function problem_array(patch::Matrix,f::Function,R2::Real,max_iter::Int)
+    PA = Array{EscapeTimeProblem}(undef,size(patch)...)
+    for i in eachindex(patch)
+        PA[i] = EscapeTimeProblem(patch[i],f,R2,max_iter)
+    end
+    return PA
+end
 
-function julia_patch(center::Complex, right_center::Complex)
-    #Overall strategy: 
-    #we will first compute the patch at the correct scale and orientation, centered at the origin
-    #we will then translate the patch to to correct location and return it
-
-    top_center = 1.0*im*right_center
-    #points from the origin to the top of the frame
-
-    horizontal_axis = LinRange(-right_center,right_center,1000)
-    vertical_axis = LinRange(-top_center,top_center,1000)
-
-    origin_patch = transpose(horizontal_axis) .+ vertical_axis
-    #we want a matrix whose i,jth element is H[i] + V[j]
-
-    return origin_patch .+ center
+function escape_time(prob::EscapeTimeProblem)
+    z = prob.z0
+    for iter in 1:prob.max_iter
+        if abs2(z) < prob.R2
+            z = prob.f(z)
+        else
+            return (iter - 1) % UInt8
+        end
+    end
+    return prob.max_iter % UInt8
 end
 
 function escape_time(z0::Number,f::Function,radius_squared::Real,max_iter::Int)
@@ -56,22 +43,21 @@ function escape_time(z0::Number,f::Function,radius_squared::Real,max_iter::Int)
     return max_iter % UInt8
 end
 
-function julia_pic(patch::Matrix,f::Function,radius_squared::Real,max_iter::Int)
-    pic = zeros(RGB{Float64},size(patch))
-        for i in eachindex(patch)
-            pic[i] = colorschemes[:glasbey_bw_minc_20_hue_150_280_n256][escape_time(patch[i],f,radius_squared,max_iter)+1]
-        end
-    return pic
+function normalize_escape_time!(patch::Matrix)
+    patch = patch .- patch[1,1]
 end
 
-function mandelbrot_pic(A::Complex, B::Complex, scale::Real, max_iter::Int)
-    patch = mandelbrot_patch(A::Complex, B::Complex, scale::Real)
+function apply_color(patch::Matrix,colors::Vector{RGB{Float64}})
     pic = zeros(RGB{Float64},size(patch))
     for i in eachindex(patch)
-        f(z) = z*z + patch[i]
-        pic[i] = colorschemes[:glasbey_bw_minc_20_hue_150_280_n256][escape_time(0,f,4,max_iter)+1]
+        pic[i] = colors[patch[i]+1]
     end
     return pic
 end
 
-
+J = julia_patch(0.0+0.0im,2.0+0.0im)
+f(z) = z*z - 1
+PA = problem_array(J,f,4,100)
+ET = escape_time.(PA)
+C = colorschemes[:glasbey_bw_minc_20_hue_150_280_n256].colors
+pic = apply_color(ET,C)
