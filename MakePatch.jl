@@ -1,5 +1,4 @@
 function mandelbrot_patch(A::Complex, B::Complex, scale::Real)
-    #Overall strategy: 
     #we will first compute the patch at the correct scale and orientation, centered at the origin
     #we will then translate the patch to to correct location and return it
 

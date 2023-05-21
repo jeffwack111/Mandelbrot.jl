@@ -18,6 +18,16 @@ function problem_array(patch::Matrix,f::Function,R2::Real,max_iter::Int)
     return PA
 end
 
+function problem_array(patch::Matrix,R2::Real,max_iter::Int)
+    PA = Array{EscapeTimeProblem}(undef,size(patch)...)
+    for i in eachindex(patch)
+        f(z) = z*z + patch[i]
+        PA[i] = EscapeTimeProblem(0.0+0.0im,f,R2,max_iter)
+    end
+    return PA
+end
+
+
 function escape_time(prob::EscapeTimeProblem)
     z = prob.z0
     for iter in 1:prob.max_iter
