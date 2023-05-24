@@ -1,14 +1,15 @@
 using GLMakie
 using ColorSchemes
 
-f = Figure()
-ax = Axis(f[1, 1])
-xlims!(-4,4)
-ylims!(-4,4)
+fig = Figure()
+ax = Axis(fig[1, 1])
+r = 4
+xlims!(-r,r)
+ylims!(-r,r)
 
 n = length(list[end].legs)
 
-record(f,"test.gif",1:frames; framerate = 3) do i
+record(fig,"test.gif",1:frames; framerate = 3) do i
     empty!(ax)
     spider = list[i]
     for (j ,leg) in enumerate(spider.legs)
