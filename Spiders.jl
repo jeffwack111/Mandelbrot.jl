@@ -31,6 +31,7 @@ struct KneadingSequence
         theta = O.orbit[1]
         star_2 = theta/2
         star_1 = (theta+1)/2
+        
         theta_itinerary = Char[]
         for angle in O.orbit
             if angle == star_1 
