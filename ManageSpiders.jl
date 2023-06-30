@@ -1,4 +1,5 @@
 using IterTools
+using Primes
 
 function farey_sequence(depth)
     if depth == 1
@@ -16,4 +17,34 @@ function farey_sequence(depth)
         return sort!(parents)
     end
 end
-        
+
+F = Orbit.(farey_sequence(300))
+
+function how_many(n)
+    return length(findall(x->x.joint==1&&length(x.orbit)==n,F))
+end
+
+function divisors(n)
+    d = Int64[1]
+    for (p, e) in factor(n)
+        r = 1
+        l = length(d)
+        for i in 1:e
+            r *= p
+            for j in 1:l
+                push!(d, d[j]*r)
+            end
+        end
+    end
+    return sort(d)
+end
+
+function p(n)
+    if n == 1
+        return 2
+    end
+    div = divisors(n)
+    pop!(div)
+    composite = sum(p,div)
+    return 2^n - composite
+end

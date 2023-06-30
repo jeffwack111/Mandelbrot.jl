@@ -1,10 +1,10 @@
 include("Spiders.jl")
 
-θ = 13//163
+θ = 4//17
 K = KneadingSequence(θ)
-frames = 150
+frames = 300
 
-list = [SpiderLegs(K.orbit)]
+list = [SpiderLegs(Orbit(θ))]
 
 for i in 1:frames-1
     SL = list[end]

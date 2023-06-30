@@ -10,3 +10,8 @@ function internal_address(K::Vector)
     return S
 end
 
+function kneading_sequence(A::Vector)
+    if A == [1]
+        return [1]
+    end
+end

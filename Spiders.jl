@@ -1,42 +1,56 @@
 import Base
+import Base.length
 using IterTools
 include("SpiderFuncs.jl")
 
-#Shoulde we have PrePeriodicKneadingSequence and PeriodicKneadingSequence as separate types?
-struct KneadingSequence
+struct Orbit
     orbit::Vector{Rational}
-    itinerary::Vector{Any}
     joint::Int
 
-    function KneadingSequence(theta::Rational)
-        orb = Rational{Int64}[]
-
-        star_2 = theta/2
-        star_1 = (theta+1)/2
-        theta_itinerary = Any[]
-
-        angle = theta
+    function Orbit(angle::Rational)
+        orb = []
         while isempty(findall(x->x==angle,orb))
-            if angle == star_1
-                push!(theta_itinerary,1)
-            elseif angle == star_2
-                push!(theta_itinerary,2)
-            elseif angle > star_2 && angle < star_1
-                push!(theta_itinerary,"A")
-            else
-                push!(theta_itinerary,"B")
-            end
-
             push!(orb,angle)
-
             angle = angle*2
             angle = angle%1//1
         end
-
-        joint = findall(x->x==angle,orb)[1]
-
-        return new(orb, theta_itinerary, joint)
+    joint = findall(x->x==angle,orb)[1]
+    new(orb, joint)
     end
+end
+
+function length(O::Orbit)
+    return length(O.orbit)
+end
+
+struct KneadingSequence
+    itinerary::String
+    joint::Int
+
+    function KneadingSequence(O::Orbit)
+        theta = O.orbit[1]
+        star_2 = theta/2
+        star_1 = (theta+1)/2
+        theta_itinerary = Char[]
+        for angle in O.orbit
+            if angle == star_1 
+                push!(theta_itinerary,'1')
+            elseif angle == star_2
+                push!(theta_itinerary,'2')
+            elseif angle > star_2 && angle < star_1
+                push!(theta_itinerary,'A')
+            else
+                push!(theta_itinerary,'B')
+            end
+        end
+        string = String(theta_itinerary)
+        new(string,O.joint)
+    end
+
+    function KneadingSequence(theta::Rational)
+        return KneadingSequence(Orbit(theta))
+    end
+
 end
 
 struct SpiderLegs{T<:Complex}
@@ -49,11 +63,11 @@ struct SpiderLegs{T<:Complex}
     end
 
     #Constructor which creates "default legs" from an orbit
-    function SpiderLegs(orbit::Vector{<:Real})
+    function SpiderLegs(O::Orbit)
         legs = Vector{ComplexF64}[]
         r = collect(LinRange(1,1000,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
-        for angle in orbit
-            push!(legs,r.*exp(1.0im*2*pi*angle).-exp(1.0im*2*pi*orbit[1]))
+        for angle in O.orbit
+            push!(legs,r.*exp(1.0im*2*pi*angle).-exp(1.0im*2*pi*O.orbit[1]))
         end
         boundary::Vector{ComplexF64} = []
         return new{ComplexF64}(legs,boundary)
@@ -79,8 +93,8 @@ function info(SL::SpiderLegs)
     println("~~~~~~~~~~~~~~~~~~~~")
     λ = SL.legs[2][1]
     println(λ/2)
-    len = length(SL.legs[1])
-    println(len)
+    points = length(SL.legs)*length(SL.legs[1])
+    println(points)
     radius = sqrt(abs2(SL.legs[1][end]))
     println(radius)
 end
@@ -105,7 +119,7 @@ function spider_map(S::SpiderLegs,K::KneadingSequence)
     append!(reverse!(boundary),boundary_two)
 
 
-    n = length(K.orbit)
+    n = length(K.itinerary)
 
     for i in 1:n-1
         #first we will calculate an image of the foot, and determine if this point is in the correct region
@@ -124,13 +138,13 @@ function spider_map(S::SpiderLegs,K::KneadingSequence)
         theta_one = atan(real(boundary_one[end]),imag(boundary_one[end]))
         theta_two = atan(real(boundary_two[end]),imag(boundary_two[end]))
         if theta_one > theta_two
-            if K.itinerary[end] == 1
+            if K.itinerary[end] == '1'
                 push!(newLegs,boundary_one) 
             else
                 push!(newLegs,boundary_two)
             end
         else
-            if K.itinerary[end] == 1
+            if K.itinerary[end] == '1'
                 push!(newLegs,boundary_two) 
             else
                 push!(newLegs,boundary_one)
