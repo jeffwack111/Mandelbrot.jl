@@ -3,7 +3,44 @@ import Base.length
 using IterTools
 include("SpiderFuncs.jl")
 
-struct Orbit
+function PeriodicOrbit(angle::Rational)
+    if angle.den % 2 == 0
+        throw(DomainError(angle, "denominator must be odd"))
+    end
+    orb = []
+    while isempty(findall(x->x==angle,orb))
+        push!(orb,angle)
+        angle = angle*2
+        angle = angle%1//1
+    end
+    return PeriodicSequence{typeof(angle)}(orb)
+end
+
+function PeriodicKneadingSequence(Orbit::PeriodicSequence)
+    theta = Orbit[1]
+    star_0 = theta/2
+    star_1 = (theta+1)/2
+    theta_itinerary = String[]
+    for angle in Orbit
+        if angle == star_0 
+            push!(theta_itinerary,"*0")
+        elseif angle == star_1
+            push!(theta_itinerary,"*1")
+        elseif angle > star_0 && angle < star_1
+            push!(theta_itinerary,"0")
+        else
+            push!(theta_itinerary,"1")
+        end
+    end
+    return(PeriodicSequence(theta_itinerary))
+end
+
+function PeriodicKneadingSequence(theta::Rational)
+    return PeriodicKneadingSequence(PeriodicOrbit(theta))
+end
+
+
+struct Orbit 
     orbit::Vector{Rational}
     joint::Int
 
@@ -14,8 +51,8 @@ struct Orbit
             angle = angle*2
             angle = angle%1//1
         end
-    joint = findall(x->x==angle,orb)[1]
-    new(orb, joint)
+        joint = findall(x->x==angle,orb)[1]
+        new(orb, joint)
     end
 end
 

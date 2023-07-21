@@ -16,7 +16,11 @@ end
 
 struct PrePeriodicSequence{T} <: AbstractVector{T}
     L::Vector{T}
-    K::Vector{T}
+    K::PeriodicSequence{T}
+end
+
+function PrePeriodicSequence(L::Vector,K::Vector)
+    return PrePeriodicSequence(L,PeriodicSequence(K))
 end
 
 function Base.size(P::PrePeriodicSequence)
@@ -30,7 +34,7 @@ function Base.getindex(P::PrePeriodicSequence,i::Int)
     elseif i <= l
         return P.L[i]
     else
-        return P.K[mod1(i - l,end)]
+        return P.K[i]
     end
 end
 
