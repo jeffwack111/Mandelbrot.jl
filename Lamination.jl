@@ -23,20 +23,26 @@ function plot_leaf!(leaf)
     end
 end
 
-function preimages(leaf)
-    a = leaf[1]
-    b = leaf[2]
-    if a<1//2
-        if b>=a+1//2
-            return [(b/2+1//2,a/2),(b/2,a/2+1//2)]
+function preimages(leaf, α)
+    #assume that leaf[2] is counterclockwise of leaf[1]
+    #always output pairs with the same orientation
+
+    a = leaf[1]/2
+    b = leaf[2]/2
+    c = leaf[1]/2+1//2
+    d = leaf[2]/2+1//2
+
+    if α/2<=a #then α/2<a<1/2
+        if b<α/2
+            return [(a,d),(c,b)]
         else
-            return [(a/2,b/2),(a/2+1//2,b/2+1//2)]
+            return [(a,b),(c,d)]
         end
-    else
-        if b<=a-1//2
-            return [(a/2+1//2,b/2),(a/2,b/2+1//2)]
+    else #then 0<a<α/2
+        if b<α/2
+            return [(a,b),(c,d)]
         else
-            return [(a/2,b/2),(a/2+1//2,b/2+1//2)]
+            return [(a,d),(c,b)]
         end
     end
 end
@@ -47,7 +53,7 @@ function laminate(alpha,depth)
         plot_leaf!(leaf)
         return [leaf]
     else
-        leaves = vcat([preimages(leaf) for leaf in laminate(alpha,depth-1)]...)
+        leaves = vcat([preimages(leaf,alpha) for leaf in laminate(alpha,depth-1)]...)
         for leaf in leaves
             plot_leaf!(leaf)
         end
@@ -55,6 +61,6 @@ function laminate(alpha,depth)
     end
 end
 
-laminate(1//6,4)
+laminate(9//240,10)
 
 f
