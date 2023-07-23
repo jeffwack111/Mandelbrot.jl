@@ -2,6 +2,7 @@ import Base
 import Base.length
 using IterTools
 include("SpiderFuncs.jl")
+include("Sequences.jl")
 
 function PeriodicOrbit(angle::Rational)
     if angle.den % 2 == 0
