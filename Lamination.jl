@@ -1,13 +1,7 @@
 using CairoMakie
+using ColorSchemes
 
-f = Figure()
-ax = Axis(f[1, 1],aspect = 1)
-xlims!(ax,-2,2)
-ylims!(ax,-2,2)
-hidedecorations!(ax)
-arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
-
-function plot_leaf!(leaf)
+function plot_leaf!(leaf,color)
     a = leaf[1]
     b = leaf[2]
     θ = (a+b)/2
@@ -16,14 +10,14 @@ function plot_leaf!(leaf)
         r = sec(2*π*δ)
         center = r*exp(2*π*1im*θ)
         radius = abs(exp(2*π*1im*a)-center)
-        arc!(Point2f(real(center),imag(center)),radius,-π,π)
+        arc!(Point2f(real(center),imag(center)),radius,-π,π, color = color)
         #arc!(Point2f(real(center),imag(center)),radius,2*π*(θ + 0.25 + δ),2*π*(θ + 0.75 - δ))
     else
-        lines!([real(exp(2*π*1im*a)),real(exp(2*π*1im*b))],[imag(exp(2*π*1im*a)),imag(exp(2*π*1im*b))])
+        lines!([real(exp(2*π*1im*a)),real(exp(2*π*1im*b))],[imag(exp(2*π*1im*a)),imag(exp(2*π*1im*b))],color = color)
     end
 end
 
-function preimages(leaf, α)
+function pre_images(leaf, α)
     #assume that leaf[2] is counterclockwise of leaf[1]
     #always output pairs with the same orientation
 
@@ -47,20 +41,35 @@ function preimages(leaf, α)
     end
 end
 
-function laminate(alpha,depth)
-    if depth == 1
-        leaf = (alpha/2,alpha/2+1//2)
-        plot_leaf!(leaf)
-        return [leaf]
-    else
-        leaves = vcat([preimages(leaf,alpha) for leaf in laminate(alpha,depth-1)]...)
-        for leaf in leaves
-            plot_leaf!(leaf)
-        end
-        return leaves
+function lamination(n)
+    alpha = n//258
+    leaves = [[(alpha/2,alpha/2+1//2)]]
+    for j = 1:9
+        children = copy(leaves[end])
+        parents = vcat([pre_images(leaf,alpha) for leaf in children]...)
+        push!(leaves,parents)
     end
+    return leaves
 end
 
-laminate(9//240,10)
+function show_lamination!(n)
+    empty!(ax)
+    L = lamination(n)
+    C = colorschemes[:southwest].colors
+    for G in enumerate(L)
+        color = C[G[1]]
+        for leaf in G[2]
+            plot_leaf!(leaf,color)
+        end
+    end
+    return f
+end
 
-f
+f = Figure()
+ax = Axis(f[1, 1],aspect = 1)
+xlims!(ax,-2,2)
+ylims!(ax,-2,2)
+hidedecorations!(ax)
+arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
+
+#record(show_lamination!, f, "southwest_258.gif", 1:257; framerate = 15)
