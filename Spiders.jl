@@ -1,144 +1,91 @@
-import Base
-import Base.length
 using IterTools
 include("SpiderFuncs.jl")
-include("Sequences.jl")
+include("VectorSequences.jl")
+include("StringSequences.jl")
 
-function PeriodicOrbit(angle::Rational)
-    if angle.den % 2 == 0
-        throw(DomainError(angle, "denominator must be odd"))
-    end
-    orb = []
+function orbit(angle::Rational)
+    orb = Rational[]
     while isempty(findall(x->x==angle,orb))
         push!(orb,angle)
         angle = angle*2
         angle = angle%1//1
     end
-    return PeriodicSequence{typeof(angle)}(orb)
+    l = findall(x->x==angle,orb)[1]
+    if l == 1
+        return PVector(orb)
+    else 
+        return PPVector(orb[1:(l-1)],orb[l:end])
+    end
 end
 
-function PeriodicKneadingSequence(Orbit::PeriodicSequence)
-    theta = Orbit[1]
-    star_0 = theta/2
-    star_1 = (theta+1)/2
-    theta_itinerary = String[]
-    for angle in Orbit
-        if angle == star_0 
-            push!(theta_itinerary,"*0")
-        elseif angle == star_1
-            push!(theta_itinerary,"*1")
-        elseif angle > star_0 && angle < star_1
-            push!(theta_itinerary,"0")
+function kneading_sequence(angle::Rational)
+    
+    a = angle/2
+    b = (angle+1)/2
+    self_itinerary = Char[]
+    orb = []
+
+    while isempty(findall(x->x==angle,orb))
+
+        push!(orb,angle)
+
+        if angle == a
+            push!(self_itinerary,'a')
+        elseif angle == b
+            push!(self_itinerary,'b')
+        elseif angle > a && angle < b
+            push!(self_itinerary,'A')
         else
-            push!(theta_itinerary,"1")
+            push!(self_itinerary,'B')
         end
+
+        angle = angle*2
+        angle = angle%1//1
+
     end
-    return(PeriodicSequence(theta_itinerary))
-end
 
-function PeriodicKneadingSequence(theta::Rational)
-    return PeriodicKneadingSequence(PeriodicOrbit(theta))
-end
-
-
-struct Orbit 
-    orbit::Vector{Rational}
-    joint::Int
-
-    function Orbit(angle::Rational)
-        orb = []
-        while isempty(findall(x->x==angle,orb))
-            push!(orb,angle)
-            angle = angle*2
-            angle = angle%1//1
-        end
-        joint = findall(x->x==angle,orb)[1]
-        new(orb, joint)
+    l = findall(x->x==angle,orb)[1]
+    if l == 1
+        return PString(join(self_itinerary))
+    else 
+        return PPString(join(self_itinerary[1:(l-1)]),join(self_itinerary[l:end]))
     end
 end
 
-function length(O::Orbit)
-    return length(O.orbit)
+struct SpiderLeg
+    leg::Vector{ComplexF64}
+    angle::Rational
 end
 
-struct KneadingSequence
-    itinerary::String
-    joint::Int
-
-    function KneadingSequence(O::Orbit)
-        theta = O.orbit[1]
-        star_2 = theta/2
-        star_1 = (theta+1)/2
-        
-        theta_itinerary = Char[]
-        for angle in O.orbit
-            if angle == star_1 
-                push!(theta_itinerary,'1')
-            elseif angle == star_2
-                push!(theta_itinerary,'2')
-            elseif angle > star_2 && angle < star_1
-                push!(theta_itinerary,'A')
-            else
-                push!(theta_itinerary,'B')
-            end
-        end
-        string = String(theta_itinerary)
-        new(string,O.joint)
-    end
-
-    function KneadingSequence(theta::Rational)
-        return KneadingSequence(Orbit(theta))
-    end
-
+function standard_leg(angle::Rational)
+    r = collect(LinRange(1,100,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
+    return SpiderLeg(r.*exp(1.0im*2*pi*angle),angle)
 end
 
-struct SpiderLegs{T<:Complex}
-    legs::Vector{Vector{T}}
-    boundary::Vector{ComplexF64}
-
-    #Standard constructor
-    function SpiderLegs(legs::Vector{Vector{ComplexF64}},boundary::Vector{ComplexF64})
-        return new{ComplexF64}(legs,boundary)
-    end
-
-    #Constructor which creates "default legs" from an orbit
-    function SpiderLegs(O::Orbit)
-        legs = Vector{ComplexF64}[]
-        r = collect(LinRange(1,1000,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
-        for angle in O.orbit
-            push!(legs,r.*exp(1.0im*2*pi*angle).-exp(1.0im*2*pi*O.orbit[1]))
-        end
-        boundary::Vector{ComplexF64} = []
-        return new{ComplexF64}(legs,boundary)
-    end
-
-end
-
-function grow!(S::SpiderLegs,scale::Real,num::Int)
-    for leg in S.legs
-        #Get the arrow pointing from the second to last point to the last point
-        arrow = scale*(leg[end]-leg[end-1])
-        #add new elements which are the last element plus the arrow
-        for i in 1:num
-            append!(leg,leg[end]+arrow)
-        end
+function grow!(S::SpiderLeg,scale::Real,num::Int)
+    #Get the arrow pointing from the second to last point to the last point
+    arrow = scale*(leg[end]-leg[end-1])
+    #add new elements which are the last element plus the arrow
+    for i in 1:num
+        append!(S.leg,S.leg[end]+arrow)
     end
 end
 
 function prune!()
 end
 
-function info(SL::SpiderLegs)
+function info(SL::SpiderLeg)
     println("~~~~~~~~~~~~~~~~~~~~")
-    λ = SL.legs[2][1]
+    λ = SL.leg[2][1]
     println(λ/2)
-    points = length(SL.legs)*length(SL.legs[1])
+    points = length(SL.leg)*length(SL.leg[1])
     println(points)
-    radius = sqrt(abs2(SL.legs[1][end]))
+    radius = sqrt(abs2(SL.leg[1][end]))
     println(radius)
 end
 
-function spider_map(S::SpiderLegs,K::KneadingSequence)
+#=
+function spider_map(S::SpiderLegs,K::PString)
 
     newLegs = Vector{ComplexF64}[]
 
@@ -206,3 +153,4 @@ function spider_map(S::SpiderLegs,K::KneadingSequence)
     return SL
 
 end
+=#

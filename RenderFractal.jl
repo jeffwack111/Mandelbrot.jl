@@ -1,7 +1,6 @@
 using Images
 using ColorSchemes
 using ImageView
-include("MakePatch.jl")
 
 struct EscapeTimeProblem
     z0::Number
