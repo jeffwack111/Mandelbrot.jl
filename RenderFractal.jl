@@ -1,6 +1,6 @@
 using Images
 using ColorSchemes
-using ImageView
+using ImageView ## We can replace this dependancy with Makie
 
 struct EscapeTimeProblem
     z0::Number
