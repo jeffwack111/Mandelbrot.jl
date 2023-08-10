@@ -52,6 +52,10 @@ function Base.getindex(P::PVector, I)
     return [P[i] for i in I]
 end
 
+function Base.length(P::PVector)
+    return length(P.S)
+end
+
 struct PPVector{T}
     L::Vector{T}
     K::PVector{T}
@@ -74,4 +78,8 @@ end
 
 function Base.getindex(P::PPVector, I) 
     return [P[i] for i in I]
+end
+
+function Base.length(P::PPVector)
+    return length(P.L) + length(P.K)
 end

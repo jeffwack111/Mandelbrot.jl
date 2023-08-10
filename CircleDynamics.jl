@@ -1,3 +1,5 @@
+include("Sequences.jl")
+
 function orbit(angle::Rational)
 
     orb = Rational[]
