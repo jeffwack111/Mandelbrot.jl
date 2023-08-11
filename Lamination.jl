@@ -71,5 +71,6 @@ xlims!(ax,-2,2)
 ylims!(ax,-2,2)
 hidedecorations!(ax)
 arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
+f
 
 #record(show_lamination!, f, "southwest_258.gif", 1:257; framerate = 15)
