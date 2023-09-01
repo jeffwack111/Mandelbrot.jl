@@ -2,32 +2,43 @@ using IterTools
 include("SpiderFuncs.jl")
 include("CircleDynamics.jl")
 
-abstract type Spider
+struct SpiderInfo
+    orbit::Vector{Rational}
+    kneading_sequence::String
+    mapsto::Vector{Int}
 end
 
-struct PSpider <: Spider
-    legs::PVector{ComplexF64}
-    kneading_sequence::PString
+function SpiderInfo(angle::Rational)
+    
+    a = angle/2
+    b = (angle+1)/2
+    self_itinerary = Char[]
+    orb,mapsto = orbit(angle)
+
+    for theta in orb
+        if theta == a
+            push!(self_itinerary,'a')
+        elseif theta == b
+            push!(self_itinerary,'b')
+        elseif theta > a && theta < b
+            push!(self_itinerary,'A')
+        else
+            push!(self_itinerary,'B')
+        end
+    end
+
+    return SpiderInfo(orb,join(self_itinerary),mapsto)
+
 end
 
-struct PPSpider <: Spider
-    legs::PPVector{ComplexF64}
-    kneading_sequence::PPString
-end
-
-function numlegs(S::Spider)
-    return size(S.legs)
-end
-
-
-function printspider(S::Spider)
-    for 
-#=
-
-function standard_spider(angle::Rational)
-    orb = orbit(angle)
+function standard_legs(angle::Rational)
+    info = SpiderInfo(angle)
     r = collect(LinRange(1,100,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
-    return SpiderLeg(r.*exp(1.0im*2*pi*angle),angle)
+    legs  = Vector{ComplexF64}[]
+    for theta in info.orbit
+        push!(legs,(cos(theta)+1.0im*sin(theta)) .* r)
+    end
+    return legs
 end
 
 
