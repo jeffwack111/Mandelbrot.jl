@@ -36,11 +36,9 @@ function PPString(L::String, K::String)
     return PPString(L,PString(K))
 end
 
-
-
 ############################################
 
-struct PVector{T} 
+struct PVector{T} <: AbstractVector{T}
     S::Vector{T}
 end
 
@@ -52,11 +50,11 @@ function Base.getindex(P::PVector, I)
     return [P[i] for i in I]
 end
 
-function Base.length(P::PVector)
-    return length(P.S)
+function Base.size(P::PVector)
+    return size(P.S)
 end
 
-struct PPVector{T}
+struct PPVector{T} <: AbstractVector{T}
     L::Vector{T}
     K::PVector{T}
 end
@@ -80,6 +78,24 @@ function Base.getindex(P::PPVector, I)
     return [P[i] for i in I]
 end
 
-function Base.length(P::PPVector)
-    return length(P.L) + length(P.K)
+function Base.size(P::PPVector)
+    return size(P.L) .+ size(P.K)
 end
+
+#####################################################
+
+struct Orbit
+    points_to::Vector{Int}
+    items::Vector{Any}
+end
+
+function apply(f,orb::Orbit)
+    new_items = []
+    for index in orb.points_to
+        append!(new_items,f(orb.items[index]))
+    end
+    return Orbit(orb.points_to,new_items)
+end
+
+
+

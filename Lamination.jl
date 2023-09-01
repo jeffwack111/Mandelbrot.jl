@@ -70,6 +70,7 @@ ax = Axis(f[1, 1],aspect = 1)
 xlims!(ax,-2,2)
 ylims!(ax,-2,2)
 hidedecorations!(ax)
+
 arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
 f
 

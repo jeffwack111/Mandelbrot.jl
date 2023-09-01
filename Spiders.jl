@@ -1,18 +1,38 @@
 using IterTools
 include("SpiderFuncs.jl")
-include("Sequences.jl")
+include("CircleDynamics.jl")
 
-struct SpiderLeg
-    leg::Vector{ComplexF64}
-    angle::Rational
+abstract type Spider
 end
 
-function standard_leg(angle::Rational)
+struct PSpider <: Spider
+    legs::PVector{ComplexF64}
+    kneading_sequence::PString
+end
+
+struct PPSpider <: Spider
+    legs::PPVector{ComplexF64}
+    kneading_sequence::PPString
+end
+
+function numlegs(S::Spider)
+    return size(S.legs)
+end
+
+
+function printspider(S::Spider)
+    for 
+#=
+
+function standard_spider(angle::Rational)
+    orb = orbit(angle)
     r = collect(LinRange(1,100,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
     return SpiderLeg(r.*exp(1.0im*2*pi*angle),angle)
 end
 
-function grow!(S::SpiderLeg,scale::Real,num::Int)
+
+#=
+function grow!(S::Spider,scale::Real,num::Int)
     #Get the arrow pointing from the second to last point to the last point
     arrow = scale*(leg[end]-leg[end-1])
     #add new elements which are the last element plus the arrow
@@ -34,7 +54,7 @@ function info(SL::SpiderLeg)
     println(radius)
 end
 
-#=
+
 function spider_map(S::SpiderLegs,K::PString)
 
     newLegs = Vector{ComplexF64}[]
