@@ -1,4 +1,6 @@
 using IterTools
+using CairoMakie
+using ColorSchemes
 include("SpiderFuncs.jl")
 include("CircleDynamics.jl")
 
@@ -36,41 +38,152 @@ function standard_legs(angle::Rational)
     r = collect(LinRange(1,100,1000))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
     legs  = Vector{ComplexF64}[]
     for theta in info.orbit
-        push!(legs,(cos(theta)+1.0im*sin(theta)) .* r)
+        push!(legs,(cos(theta*2*pi)+1.0im*sin(theta*2*pi)) .* r)
     end
+    legs[1] = legs[1] .- legs[1][1]
     return legs
 end
 
-
-#=
-function grow!(S::Spider,scale::Real,num::Int)
+function grow!(legs::Vector{Vector{ComplexF64}},scale::Real,num::Int)
     #Get the arrow pointing from the second to last point to the last point
-    arrow = scale*(leg[end]-leg[end-1])
-    #add new elements which are the last element plus the arrow
-    for i in 1:num
-        append!(S.leg,S.leg[end]+arrow)
+    for leg in legs
+        arrow = scale*(leg[end]-leg[end-1])
+        #add new elements which are the last element plus the arrow
+        for i in 1:num
+            append!(leg,leg[end]+arrow)
+        end
     end
 end
+
 
 function prune!()
 end
 
-function info(SL::SpiderLeg)
+function spider_info(legs::Vector{Vector{ComplexF64}})
     println("~~~~~~~~~~~~~~~~~~~~")
-    λ = SL.leg[2][1]
+    λ = legs[2][1]
     println(λ/2)
-    points = length(SL.leg)*length(SL.leg[1])
+    points = length(leg)*length(leg[1])
     println(points)
-    radius = sqrt(abs2(SL.leg[1][end]))
+    radius = sqrt(abs2(leg[1][end]))
     println(radius)
 end
 
+function dev_spider_map(angle::Rational)
+    return dev_spider_map(SpiderInfo(angle),standard_legs(angle))
+end
 
-function spider_map(S::SpiderLegs,K::PString)
 
+function dev_spider_map(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
+
+    fig = Figure()
+    ax1 = Axis(fig[1, 1])
+    r = 4
+    xlims!(-r,r)
+    ylims!(-r,r)
+
+    newLegs = copy(Legs)
+
+    n = length(newLegs)
+
+    for (j ,leg) in enumerate(newLegs)
+        lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
+    end
+
+
+    ax2 = Axis(fig[1, 2])
+    r = 4
+    xlims!(-r,r)
+    ylims!(-r,r)
+
+    λ = Legs[2][1]
+    newLegs = newLegs ./ λ
+
+    for (j ,leg) in enumerate(newLegs)
+        lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
+    end
+
+    ax3 = Axis(fig[2, 1])
+    r = 4
+    xlims!(-r,r)
+    ylims!(-r,r)
+    newnewLegs = Vector{Vector{ComplexF64}}(undef,length(S.mapsto))
+
+    regions = "AB"
+
+    for (index,source) in enumerate(S.mapsto)
+        #This foot is guaranteed to be in the right half-plane thanks to the IEEE definition of sqrt
+        #What region is it in? The right preimage of a foot is in region B iff the line connecting the foot to foot 2 crosses through leg 1
+        line = (newLegs[2][1],newLegs[source][1])
+        pairs = partition(newLegs[1],2,1)
+        intersections = Vector{Bool}(undef,length(pairs))
+        for (j,pair) in enumerate(pairs)
+            intersections[j] = test_intersection(pair...,line...)
+        end
+        region_index = sum(intersections)%2 + 1
+        if regions[region_index] == S.kneading_sequence[index]
+            newnewLegs[index] = path_sqrt(Legs[source]./λ)
+        else
+            newnewLegs[index] = -1 .* path_sqrt(Legs[source]./λ)
+        end
+        
+    end
+    
+    for (j ,leg) in enumerate(newnewLegs)
+        lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
+    end
+
+    ax4 = Axis(fig[2, 2])
+    r = 4
+    xlims!(-r,r)
+    ylims!(-r,r)
+
+    for leg in newnewLegs
+        leg .+= (-1.0+0.0im)
+    end
+    newnewLegs .*= (2.0+0.0im)
+
+    for (j ,leg) in enumerate(newnewLegs)
+        lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
+    end
+
+    return fig
+
+end
+
+function spider_map(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
     newLegs = Vector{ComplexF64}[]
 
-    λ = S.legs[2][1]
+    regions = "AB"
+
+    for (index,source) in enumerate(S.mapsto)
+        #This foot is guaranteed to be in the right half-plane thanks to the IEEE definition of sqrt
+        #What region is it in? The right preimage of a foot is in region B iff the line connecting the foot to foot 2 crosses through leg 1
+        λ = Legs[2][1]
+        line = (λ,Legs[source][1])
+        pairs = partition(L[1],2,1)
+        intersections = Vector{Bool}(undef,length(pairs))
+        for (j,pair) in enumerate(pairs)
+            intersections[j] = test_intersection(pair...,line...)
+        end
+        region_index = sum(intersections)%2 + 1
+        if regions[region_index] == S.kneading_sequence[index]
+            push!(newLegs, 2.0 .* (path_sqrt(Legs[source]./λ) .- 1.0))
+        else
+            push!(newLegs, 2.0 .* (-1 .* path_sqrt(Legs[source]./λ) .- 1.0))
+        end
+        
+    end
+
+    grow!(newLegs,10,10)
+
+    return newLegs
+    
+end
+
+
+#=
+
 
     #first calculate the two lifts of the 1st leg
 

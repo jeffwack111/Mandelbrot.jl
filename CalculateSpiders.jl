@@ -1,14 +1,14 @@
 include("Spiders.jl")
 
-θ = 4//17
-K = kneading_sequence(θ)
-frames = 300
+θ = 1//62
+info = SpiderInfo(θ)
+frames = 100
 
-list = [SpiderLegs(Orbit(θ))]
+list = [standard_legs(θ)]
 
 for i in 1:frames-1
     SL = list[end]
-    push!(list,spider_map(SL,K))
+    push!(list,spider_map(info,SL))
 end
 
 
