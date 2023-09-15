@@ -41,11 +41,11 @@ function internal_address(angle::Rational)
 end
 
 function kneading_sequence(internaladdress::Vector{Int})
-    if A == [1]
+    if internal_address == [1]
         return PeriodicSequence([1])
     else
-        s = pop!(A)
-        K = kneading_sequence(A)
+        s = pop!(internal_address)
+        K = kneading_sequence(internal_address)
         R = K[1:s-1]
         if K[s] == 0
             push!(R,1)

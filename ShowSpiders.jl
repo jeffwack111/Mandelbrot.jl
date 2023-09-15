@@ -3,7 +3,7 @@ using ColorSchemes
 
 fig = Figure()
 ax = Axis(fig[1, 1])
-r = 4
+r = 8
 xlims!(-r,r)
 ylims!(-r,r)
 

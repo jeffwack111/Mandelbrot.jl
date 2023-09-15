@@ -1,101 +1,73 @@
-#############################################
-
-struct PString
-    S::String
+struct Sequence
+    items::Vector
+    preperiod::Int
 end
 
-function Base.getindex(S::PString,i::Int)
-    return S.S[mod1(i,end)]
+import Base.==
+function ==(x::Sequence,y::Sequence)
+    return x.items==y.items && x.preperiod==x.preperiod
 end
 
-function Base.getindex(P::PString, I) 
-    return join([P[i] for i in I])
+function shift(seq::Sequence)
+    if seq.preperiod == 0 
+        #then seq is periodic
+
+        newitems = circshift(items,-1)
+        return Sequence(newitems,0)
+
+    else
+        #then the sequence is preperiodic
+
+        newpreperiod = preperiod - 1 
+        newitems = collect(Iterators.drop(seq.items,1))
+        return Sequence(newitems,newpreperiod)
+
+    end  
 end
 
-struct PPString
-    L::String
-    K::PString
-end
+function orbit(angle::Rational)
+    items = Rational[]
 
-function Base.getindex(S::PPString,i::Int)
-    if i<1
-        throw(BoundsError(S,i))
+    while isempty(findall(x->x==angle,items))
+        push!(items,angle)
+        angle = angle*2
+        angle = angle%1//1
     end
-    try
-        return S.L[i]
-    catch
-        return S.K[i]
+
+    preperiod = findall(x->x==angle,items)[1] - 1
+
+    return Sequence(items,preperiod)
+    
+end
+
+function kneadingsequence(orb::Sequence)
+    angle = orb.items[1]
+
+    a = angle/2
+    b = (angle+1)/2
+    self_itinerary = Char[]
+
+    for theta in orb.items
+        if theta == a
+            push!(self_itinerary,'*')
+        elseif theta == b
+            push!(self_itinerary,'*')
+        elseif theta > a && theta < b
+            push!(self_itinerary,'A')
+        else
+            push!(self_itinerary,'B')
+        end
     end
+    
+    return Sequence(self_itinerary,orb.preperiod)
 end
 
-function Base.getindex(S::PPString, I) 
-    return join([S[i] for i in I])
+function kneadingsequence(angle::Rational)
+    orb = orbit(angle)
+    return kneadingsequence(orb)
 end
-
-function PPString(L::String, K::String)
-    return PPString(L,PString(K))
-end
-
-############################################
-
-struct PVector{T} <: AbstractVector{T}
-    S::Vector{T}
-end
-
-function Base.getindex(P::PVector,i::Int)
-    return P.S[mod1(i,end)]
-end
-
-function Base.getindex(P::PVector, I) 
-    return [P[i] for i in I]
-end
-
-function Base.size(P::PVector)
-    return size(P.S)
-end
-
-struct PPVector{T} <: AbstractVector{T}
-    L::Vector{T}
-    K::PVector{T}
-end
-
-function PPVector(L::Vector,K::Vector)
-    return PPVector(L,PVector(K))
-end
-
-function Base.getindex(P::PPVector,i::Int)
-    if i<1
-        throw(BoundsError(P,i))
-    end
-    try
-        return P.L[i]
-    catch
-        return P.K[i]
-    end
-end
-
-function Base.getindex(P::PPVector, I) 
-    return [P[i] for i in I]
-end
-
-function Base.size(P::PPVector)
-    return size(P.L) .+ size(P.K)
-end
-
-#####################################################
-
-struct Orbit
-    points_to::Vector{Int}
-    items::Vector{Any}
-end
-
-function apply(f,orb::Orbit)
-    new_items = []
-    for index in orb.points_to
-        append!(new_items,f(orb.items[index]))
-    end
-    return Orbit(orb.points_to,new_items)
-end
+    
+    
 
 
 

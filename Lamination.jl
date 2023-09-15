@@ -41,8 +41,8 @@ function pre_images(leaf, α)
     end
 end
 
-function lamination(n)
-    alpha = n//258
+function lamination(alpha)
+    
     leaves = [[(alpha/2,alpha/2+1//2)]]
     for j = 1:9
         children = copy(leaves[end])
@@ -52,9 +52,9 @@ function lamination(n)
     return leaves
 end
 
-function show_lamination!(n)
+function show_lamination!(alpha)
     empty!(ax)
-    L = lamination(n)
+    L = lamination(alpha)
     C = colorschemes[:southwest].colors
     for G in enumerate(L)
         color = C[G[1]]
@@ -65,7 +65,7 @@ function show_lamination!(n)
     return f
 end
 
-f = Figure()
+f = Figure(dpi = 300)
 ax = Axis(f[1, 1],aspect = 1)
 xlims!(ax,-2,2)
 ylims!(ax,-2,2)

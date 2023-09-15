@@ -1,24 +1,3 @@
-include("Sequences.jl")
-
-function orbit(angle::Rational)
-
-    events = Rational[]
-    mapsto = Int[]
-
-    while isempty(findall(x->x==angle,events))
-        push!(events,angle)
-        angle = angle*2
-        angle = angle%1//1
-    end
-
-    for theta in events 
-        push!(mapsto,findall(x->x==theta*2%1,events)[1])
-    end
-
-    return (events,mapsto)
-    
-end
-
 
 function binary(angle::Rational)
 
