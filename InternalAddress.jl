@@ -1,25 +1,3 @@
-function kneading_sequence(angle::Rational)
-
-    a = angle/2
-    b = (angle+1)/2
-    self_itinerary = Char[]
-    orb,mapsto = orbit(angle)
-
-    for theta in orb
-        if theta == a
-            push!(self_itinerary,'a')
-        elseif theta == b
-            push!(self_itinerary,'b')
-        elseif theta > a && theta < b
-            push!(self_itinerary,'A')
-        else
-            push!(self_itinerary,'B')
-        end
-    end
-
-    return self_itinerary,mapsto
-end
-
 function internal_address(periodicsequence::Vector,mapsto::Vector{Int})
     if mapsto[end] == 1
         S = [1]

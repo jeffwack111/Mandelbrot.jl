@@ -42,7 +42,6 @@ function pre_images(leaf, α)
 end
 
 function lamination(alpha)
-    
     leaves = [[(alpha/2,alpha/2+1//2)]]
     for j = 1:9
         children = copy(leaves[end])
@@ -52,8 +51,14 @@ function lamination(alpha)
     return leaves
 end
 
-function show_lamination!(alpha)
-    empty!(ax)
+function show_lamination(alpha)
+    f = Figure()
+    ax = Axis(f[1, 1],aspect = 1)
+    xlims!(ax,-2,2)
+    ylims!(ax,-2,2)
+    hidedecorations!(ax)
+
+    arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
     L = lamination(alpha)
     C = colorschemes[:southwest].colors
     for G in enumerate(L)
@@ -65,13 +70,5 @@ function show_lamination!(alpha)
     return f
 end
 
-f = Figure(dpi = 300)
-ax = Axis(f[1, 1],aspect = 1)
-xlims!(ax,-2,2)
-ylims!(ax,-2,2)
-hidedecorations!(ax)
 
-arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
-f
 
-#record(show_lamination!, f, "southwest_258.gif", 1:257; framerate = 15)
