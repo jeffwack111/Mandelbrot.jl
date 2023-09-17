@@ -12,7 +12,6 @@ function goesto(S::Sequence)
     return push!(collect(2:length(S.items)),S.preperiod+1)
 end
 
-
 function shift(seq::Sequence)
     if seq.preperiod == 0 
         #then seq is periodic
@@ -45,32 +44,6 @@ function orbit(angle::Rational)
     
 end
 
-function kneadingsequence(orb::Sequence)
-    angle = orb.items[1]
-
-    a = angle/2
-    b = (angle+1)/2
-    self_itinerary = Char[]
-
-    for theta in orb.items
-        if theta == a
-            push!(self_itinerary,'*')
-        elseif theta == b
-            push!(self_itinerary,'*')
-        elseif theta > a && theta < b
-            push!(self_itinerary,'A')
-        else
-            push!(self_itinerary,'B')
-        end
-    end
-    
-    return Sequence(self_itinerary,orb.preperiod)
-end
-
-function kneadingsequence(angle::Rational)
-    orb = orbit(angle)
-    return kneadingsequence(orb)
-end
     
     
 

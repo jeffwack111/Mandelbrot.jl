@@ -1,3 +1,45 @@
+function kneadingsequence(orb::Sequence)
+    angle = orb.items[1]
+
+    a = angle/2
+    b = (angle+1)/2
+    self_itinerary = Char[]
+
+    for theta in orb.items
+        if theta == a
+            push!(self_itinerary,'*')
+        elseif theta == b
+            push!(self_itinerary,'*')
+        elseif theta > a && theta < b
+            push!(self_itinerary,'A')
+        else
+            push!(self_itinerary,'B')
+        end
+    end
+    
+    return Sequence(self_itinerary,orb.preperiod)
+end
+
+function kneadingsequence(angle::Rational)
+    orb = orbit(angle)
+    return kneadingsequence(orb)
+end
+
+function binary(angle::Rational)
+    
+    orb = orbit(angle)
+    itinerary = Char[]
+    for theta in orb.items
+        if theta < 1//2
+            push!(itinerary,'0')
+        else
+            push!(itinerary,'1')
+        end
+    end
+    return Sequence(collect(itinerary),orb.preperiod)
+
+end
+
 function internal_address(periodicsequence::Vector,mapsto::Vector{Int})
     if mapsto[end] == 1
         S = [1]
