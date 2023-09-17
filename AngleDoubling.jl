@@ -1,3 +1,5 @@
+include("Sequences.jl")
+
 function kneadingsequence(orb::Sequence)
     angle = orb.items[1]
 
