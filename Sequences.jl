@@ -8,6 +8,11 @@ function ==(x::Sequence,y::Sequence)
     return x.items==y.items && x.preperiod==x.preperiod
 end
 
+function goesto(S::Sequence)
+    return push!(collect(2:length(S.items)),S.preperiod+1)
+end
+
+
 function shift(seq::Sequence)
     if seq.preperiod == 0 
         #then seq is periodic
