@@ -15,34 +15,16 @@ end
 function shift(seq::Sequence)
     if seq.preperiod == 0 
         #then seq is periodic
-
-        newitems = circshift(items,-1)
-        return Sequence(newitems,0)
+        return Sequence(circshift!(copy(seq.items),-1),0)
 
     else
         #then the sequence is preperiodic
-
-        newpreperiod = preperiod - 1 
-        newitems = collect(Iterators.drop(seq.items,1))
-        return Sequence(newitems,newpreperiod)
+        return Sequence(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
 
     end  
 end
 
-function orbit(angle::Rational)
-    items = Rational[]
 
-    while isempty(findall(x->x==angle,items))
-        push!(items,angle)
-        angle = angle*2
-        angle = angle%1//1
-    end
-
-    preperiod = findall(x->x==angle,items)[1] - 1
-
-    return Sequence(items,preperiod)
-    
-end
 
     
     

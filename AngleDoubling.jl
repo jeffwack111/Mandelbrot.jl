@@ -1,5 +1,20 @@
 include("Sequences.jl")
 
+function orbit(angle::Rational)
+    items = Rational[]
+
+    while isempty(findall(x->x==angle,items))
+        push!(items,angle)
+        angle = angle*2
+        angle = angle%1//1
+    end
+
+    preperiod = findall(x->x==angle,items)[1] - 1
+
+    return Sequence(items,preperiod)
+    
+end
+
 function kneadingsequence(orb::Sequence)
     angle = orb.items[1]
 

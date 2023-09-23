@@ -1,7 +1,7 @@
 using NetworkLayout
 using IterTools
 
-include("Sequences.jl")
+include("AngleDoubling.jl")
 
 #Definition 3.3
 function triodmap(K::Sequence, arms::Tuple{Sequence,Sequence,Sequence})
@@ -32,19 +32,19 @@ function forwardorbit(S::Sequence)
     for i in Iterators.drop(eachindex(S.items),1)
         push!(O,shift(O[end]))
     end
-    return Sequence(O,S.pointsto)
+    return Sequence(O,S.preperiod)
 end
 
 function prependstar(S::Sequence)
-    newpointsto = [2]
-    newitems = ['*']
-    append!(newitems,S.items)
-    append!(newpointsto,S.pointsto .+ 1)
-    return Sequence(newitems,newpointsto)
+    if S.preperiod == 0
+        return Sequence(circshift!(copy(S.items),1),0)
+    else
+        return Sequence(pushfirst!(copy(S.items),'*'),S.preperiod+1)
+    end
 end
 
 function S(K::Sequence)
-    if K.pointsto[end] == 1
+    if K.preperiod == 0
         A = [K]
         for i in Iterators.drop(eachindex(K.items),1)
             push!(A,shift(A[end]))

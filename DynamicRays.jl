@@ -1,6 +1,6 @@
 using CairoMakie
 using ColorSchemes
-include("Sequences.jl")
+include("AngleDoubling.jl")
 include("SpiderFuncs.jl")
 
 function dynamicrays(c::Complex,angle::Rational)
