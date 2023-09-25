@@ -1,25 +1,28 @@
+#Admissibility of kneading sequences and structure of Hubbard trees for quadratic polynomials
+#Henk Bruin, Dierk Schleicher
+
 using NetworkLayout
 using IterTools
 
 include("AngleDoubling.jl")
 
-#Definition 3.3
+#Definition 3.3, page 260
 function triodmap(K::Sequence, arms::Tuple{Sequence,Sequence,Sequence})
 
     if arms[1].items[1] == arms[2].items[1] && arms[1].items[1] == arms[3].items[1]
-        return (shift(arms[1]),shift(arms[2]),shift(arms[3]))
+        return (shift(arms[1]),shift(arms[2]),shift(arms[3])),0
 
     elseif Set([arms[1].items[1],arms[2].items[1],arms[3].items[1]]) == Set(['A','B','*'])
-        return "STOP"
+        return "STOP",0
 
     elseif arms[1].items[1] == arms[2].items[1] 
-        return (shift(arms[1]),shift(arms[2]),K)
+        return (shift(arms[1]),shift(arms[2]),K),3
 
     elseif arms[1].items[1] == arms[3].items[1]
-        return (shift(arms[1]),K,shift(arms[3]))
+        return (shift(arms[1]),K,shift(arms[3])),2
 
     elseif arms[2].items[1] == arms[3].items[1]
-        return (K,shift(arms[2]),shift(arms[3]))
+        return (K,shift(arms[2]),shift(arms[3])),1
 
     else
         return error("no cases satisfied")
@@ -43,6 +46,7 @@ function prependstar(S::Sequence)
     end
 end
 
+#Def. page 259
 function S(K::Sequence)
     if K.preperiod == 0
         A = [K]
@@ -65,31 +69,43 @@ end
 
 function V(K::Sequence)
     orb = S(K)
+    branchpoints = Sequence[]
     for (s,t,u) in subsets(orb,3)
-
+        type,seq = testbranch(K,(s,t,u))
+        if type == "branched" && isempty(findall(x->x==seq,branchpoints))
+            push!(branchpoints,seq)
+        end
     end
+    return append!(orb,branchpoints)
+end
+
+function V(angle::Rational)
+    return V(kneadingsequence(angle))
 end
 
 function testbranch(K::Sequence,arms::Tuple{Sequence,Sequence,Sequence})
+    chopsequence = []
+    chop = 0
     triodsequence = Tuple{Sequence,Sequence,Sequence}[]
     triod = arms
 
-    while isempty(findall(x->x==triod,triodsequence))
+    while isempty(findall(x->x==triod,triodsequence)) && triod != "STOP"
         push!(triodsequence,triod)
-        triod = triodmap(K,triod)
+        push!(chopsequence,chop) 
+        triod,chop = triodmap(K,triod)
     end
 
-    mapsto = []
-
-    for ii in Iterators.drop(eachindex(triodsequence),1)
-        push!(mapsto,ii)
+    if triod == "STOP"
+        return "flat"
     end
 
-    joint = findall(x->x==triod,triodsequence)[1]
-    push!(mapsto,joint)
+    preperiod = findall(x->x==triod,triodsequence)[1] - 1
 
-    return Sequence(triodsequence,mapsto)
-
+    if (1 in chopsequence) && (2 in chopsequence) && (3 in chopsequence) 
+        return "branched",majorityvote(Sequence(triodsequence,preperiod))
+    else
+        return "flat"
+    end
 end
 
 function majorityvote(arms::Tuple{Sequence,Sequence,Sequence})
@@ -107,5 +123,5 @@ function majorityvote(S::Sequence)
     for triod in S.items
         push!(newitems,majorityvote(triod))
     end
-    return Sequence(newitems,S.pointsto)
+    return Sequence(newitems,S.preperiod)
 end
