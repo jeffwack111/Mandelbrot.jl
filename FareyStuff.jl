@@ -18,7 +18,6 @@ function farey_sequence(depth)
     end
 end
 
-F = Orbit.(farey_sequence(300))
 
 function how_many(n)
     return length(findall(x->x.joint==1&&length(x.orbit)==n,F))
