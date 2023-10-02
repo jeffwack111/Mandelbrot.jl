@@ -12,30 +12,80 @@ function hubbardtree(seq::Sequence)
     orbit = criticalorbit(seq)
     n = length(orbit)
 
-    results = fill(("untested",0),(n,n,n))
+    results = fill(0,(n,n,n))
 
-    branchpoints = Sequence[]
+    markedpoints = copy(orbit)
 
-    for triple in subsets(enumerate(orbit),3)
-        type,seq = iteratetriod(K,(triple[1][2],triple[2][2],triple[3][2]))
+    for triple in subsets(collect(enumerate(orbit)),3)
+        type,seq = iteratetriod(orbit[2],(triple[1][2],triple[2][2],triple[3][2]))
+
         if type == "branched"
-            if isempty(findall(x->x==seq,branchpoints))
-                push!(branchpoints,seq)
+            if isempty(findall(x->x==seq,markedpoints))
+                push!(markedpoints,seq)
+                results = cat(results,1,dims=(1,2,3))
+                index = lastindex(markedpoints)
+            else
+                index = findall(x->x==seq,markedpoints)[1]
             end
-            branchindex = findall(x->x==seq,branchpoints)
-            results[triple[1][1],triple[2][1],triple[3][1]] = (type,branchindex)
-            results[triple[1][1],triple[3][1],triple[2][1]] = (type,branchindex)
-            results[triple[2][1],triple[3][1],triple[1][1]] = (type,branchindex)
-            results[triple[2][1],triple[1][1],triple[3][1]] = (type,branchindex)
-            results[triple[3][1],triple[1][1],triple[2][1]] = (type,branchindex)
-            results[triple[3][1],triple[2][1],triple[1][1]] = (type,branchindex)
-        
+        elseif type == "flat"
+            index = triple[seq][1]
+        end
 
+        results[triple[1][1],triple[2][1],triple[3][1]] = index
 
+    end
 
-    
-    results = cat(results,("untested",0),dims=(1,2,3))
+    for triple in subsets(collect(enumerate(markedpoints)),3)
+        if results[triple[1][1],triple[2][1],triple[3][1]] == 0 
+            type,seq = iteratetriod(orbit[2],(triple[1][2],triple[2][2],triple[3][2]))
 
+            if type == "branched"
+                return error("I am suprised")
+            elseif type == "flat"
+                index = triple[seq][1]
+            end
+
+            results[triple[1][1],triple[2][1],triple[3][1]] = index
+        end
+    end
+
+    d = length(markedpoints)
+
+    M = fill([0],(d,d))
+
+    for (ii,jj) in subsets(collect(1:d),2)
+        middles = Int[]
+        for kk in 1:d
+            if kk != ii && kk != jj 
+                triple = sort([ii,jj,kk])
+                push!(middles,results[triple[1],triple[2],triple[3]])
+            end
+        end
+        M[ii,jj] = middles
+    end
+
+    A = zeros(Int64,(d,d))
+
+    for (ii,jj) in subsets(collect(1:d),2)
+        pointsbetween = 0
+        for mid in M[ii,jj]
+            if mid != ii && mid !=jj
+                pointsbetween += 1
+            end
+        end
+        if pointsbetween == 0
+            A[ii,jj] = 1
+            A[jj,ii] = 1
+        end
+    end
+
+    return A, markedpoints
+                    
+
+end
+
+function hubbardtree(angle::Rational)
+    return hubbardtree(kneadingsequence(angle))
 end
 
 
