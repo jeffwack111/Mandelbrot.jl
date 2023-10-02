@@ -40,7 +40,7 @@ function hubbardtree(seq::Sequence)
             type,seq = iteratetriod(orbit[2],(triple[1][2],triple[2][2],triple[3][2]))
 
             if type == "branched"
-                return error("I am suprised")
+                index = findall(x->x==seq,markedpoints)[1]
             elseif type == "flat"
                 index = triple[seq][1]
             end
@@ -86,6 +86,14 @@ end
 
 function hubbardtree(angle::Rational)
     return hubbardtree(kneadingsequence(angle))
+end
+
+function hubbardtree(internaladdress::Vector{Int})
+    K = kneadingsequence(internaladdress)
+    seq = copy(K.items)
+    seq[end] = '*'
+    print(seq)
+    return hubbardtree(Sequence(seq,0))
 end
 
 
