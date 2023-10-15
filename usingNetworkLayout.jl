@@ -4,7 +4,7 @@ using GraphMakie, Graphs
 
 include("HubbardTrees.jl")
 
-A = [1,2,4,5,7,13,14]
+A = [1,2,4,5,6]
 
 results, markedpoints = hubbardtree(A)
 

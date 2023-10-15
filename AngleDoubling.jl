@@ -94,3 +94,17 @@ function kneadingsequence(internaladdress::Vector{Int})
         return Sequence(R,0)
     end
 end
+
+function rho(kneadingsequence::Sequence,n::Int)
+    k = n+1 
+    while kneadingsequence[k] = kneadingsequence[k-n]
+        k = k+1
+    end
+    return k
+end
+
+function rhoorbit() #a lazy iterator?
+end
+
+#function denominators(internaladdress::Sequence)
+
