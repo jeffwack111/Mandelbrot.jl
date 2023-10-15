@@ -1,4 +1,5 @@
 using Primes
+using IterTools
 
 struct Sequence
     items::Vector
@@ -21,7 +22,7 @@ end
 
 function removerepetend(r::Vector,p::Vector)
     k = length(r)
-    if length(r) > length(p) #then p certainly does not contain ratio
+    if length(r) > length(p) #then p certainly does not contain r
         return p
     else
         if p[(end-k+1):end] == r
@@ -34,28 +35,31 @@ end
 
 function reduce(seq::Sequence)
     #first check that the periodic part is prime
-    if seq.preperiod != 0
-        preperiod = seq.items[1:seq.preperiod]
-    else
-        preperiod = empty(seq.items)
-    end
-
     repetend = seq.items[(seq.preperiod+1):end]
     k = length(repetend)
 
-    for d in Iterators.flatten((1,factor(Set,k)))
-        chunks = collect.(partition(repetend,d))
-        if allequal(chunks)
-            repetend = chunks[1]
-            k = length(repetend)
-            break
+    if length(repetend) > 1
+        for d in Iterators.flatten((1,factor(Set,k)))
+            chunks = collect.(partition(repetend,d))
+            if allequal(chunks)
+                repetend = chunks[1]
+                k = length(repetend)
+                break
+            end
         end
     end
 
-    preperiod = removerepetend(repetend,preperiod)
-    l = length(preperiod)
+    if seq.preperiod != 0
+        preperiod = copy(seq.items[1:seq.preperiod])
+        while !isempty(preperiod) && repetend[end] == preperiod[end]
+            pop!(preperiod)
+            circshift!(repetend,1)
+        end
+        return Sequence(append!(copy(preperiod),repetend),length(preperiod)) 
+    else
+        return Sequence(repetend,0)
+    end
 
-    return Sequence(append!(preperiod,repetend),l) 
 end
 
     

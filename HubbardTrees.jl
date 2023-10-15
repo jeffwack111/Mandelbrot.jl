@@ -3,9 +3,6 @@
 #Admissibility of kneading sequences and structure of Hubbard trees for quadratic polynomials
 #Henk Bruin, Dierk Schleicher
 
-using NetworkLayout
-using IterTools
-
 include("AngleDoubling.jl")
 
 function hubbardtree(seq::Sequence)
