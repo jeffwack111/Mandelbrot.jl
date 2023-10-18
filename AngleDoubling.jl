@@ -15,31 +15,29 @@ function orbit(angle::Rational)
     
 end
 
-function kneadingsequence(orb::Sequence)
-    angle = orb.items[1]
+function thetaitinerary(theta::Rational,orb::Sequence)
+    a = theta/2
+    b = (theta+1)/2
+    itinerary = Char[]
 
-    a = angle/2
-    b = (angle+1)/2
-    self_itinerary = Char[]
-
-    for theta in orb.items
-        if theta == a
-            push!(self_itinerary,'*')
-        elseif theta == b
-            push!(self_itinerary,'*')
-        elseif theta > a && theta < b
-            push!(self_itinerary,'A')
+    for angle in orb.items
+        if angle == a
+            push!(itinerary,'*')
+        elseif angle == b
+            push!(itinerary,'*')
+        elseif angle > a && angle < b
+            push!(itinerary,'A')
         else
-            push!(self_itinerary,'B')
+            push!(itinerary,'B')
         end
     end
     
-    return Sequence(self_itinerary,orb.preperiod)
+    return Sequence(itinerary,orb.preperiod)
 end
 
 function kneadingsequence(angle::Rational)
     orb = orbit(angle)
-    return kneadingsequence(orb)
+    return thetaitinerary(angle,orb)
 end
 
 function binary(angle::Rational)
@@ -57,25 +55,37 @@ function binary(angle::Rational)
 
 end
 
-#works only for strictly periodic kneading sequences
-function internaladdress(K::Sequence)
-    if K.preperiod == 0
-        S = [1]
-        v = ['A']
-        for ii in eachindex(K.items)
-            if K.items[ii] != v[mod1(ii,end)]
-                push!(S,ii)
-                v = K.items[mod1.(1:ii,end)]
-            end
+
+function rho(kneadingsequence::Sequence,n::Int)
+    if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0
+        return Inf
+    end
+    k = n+1 
+    while kneadingsequence[k] == kneadingsequence[k-n]
+        k = k+1
+    end
+    return k
+end
+
+function rhoorbit(kneadingsequence::Sequence,n::Int) 
+    if kneadingsequence.preperiod == 0
+        orbit = [n]
+        while rho(kneadingsequence,orbit[end]) !== Inf
+            append!(orbit,rho(kneadingsequence,orbit[end]))
         end
-        return S
+        return orbit
     else
-        throw(DomainError("The internal address for a preperiodic sequence may be infinite"))
+        error("cant deal with preperiodic")
     end
 end
 
+#works only for strictly periodic kneading sequences
+function internaladdress(K::Sequence)
+    return rhoorbit(K,1)
+end
+
 function internaladdress(angle::Rational)
-    return internaladdress(kneadingsequence(angle))    
+    return rhoorbit(kneadingsequence(angle),1)    
 end
 
 #Works only for finite internal addresses
@@ -95,16 +105,25 @@ function kneadingsequence(internaladdress::Vector{Int})
     end
 end
 
-function rho(kneadingsequence::Sequence,n::Int)
-    k = n+1 
-    while kneadingsequence[k] = kneadingsequence[k-n]
-        k = k+1
+function admissible(kneadingsequence::Sequence,m::Int)
+    if m in internaladdress(kneadingsequence)
+        return true
+    else
+        for k in 1:m-1
+            if mod(m,k) == 0 && rho(kneadingsequence,k) > m
+                return true
+            end
+        end
+        if rho(kneadingsequence, m) != Inf
+            for r in 1:m
+                if mod(r,m) == mod(rho(kneadingsequence, m),m) && ! (m in rhoorbit(kneadingsequence,r))
+                    return true
+                end
+            end
+        end
+        return false
     end
-    return k
 end
 
-function rhoorbit() #a lazy iterator?
-end
 
-#function denominators(internaladdress::Sequence)
 

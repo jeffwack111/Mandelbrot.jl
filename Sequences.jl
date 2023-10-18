@@ -20,6 +20,10 @@ function Base.getindex(S::Sequence, I::UnitRange)
     return [S[ii] for ii in I]
 end
 
+function period(S::Sequence)
+    return length(S.items) - S.preperiod
+end
+
 function removerepetend(r::Vector,p::Vector)
     k = length(r)
     if length(r) > length(p) #then p certainly does not contain r

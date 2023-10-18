@@ -1,9 +1,26 @@
 using CairoMakie
 using ColorSchemes
 
-function plot_leaf!(leaf,color)
-    a = leaf[1]
-    b = leaf[2]
+include("AngleDoubling.jl")
+
+struct Leaf
+    a::Rational
+    b::Rational
+    #a is less than b and both are between zero and one
+    function Leaf(x::Rational,y::Rational)
+        if x<=y
+            new(x,y)
+        else
+            new(y,x)
+        end
+    end
+end
+
+
+
+function plot_leaf!(leaf::Leaf,color)
+    a = leaf.a
+    b = leaf.b
     θ = (a+b)/2
     if abs2(a-b) != 0.25
         δ = (b-a)/2
@@ -17,26 +34,26 @@ function plot_leaf!(leaf,color)
     end
 end
 
-function pre_images(leaf, α)
+function pre_images(leaf::Leaf, α)
     #assume that leaf[2] is counterclockwise of leaf[1]
     #always output pairs with the same orientation
 
-    a = leaf[1]/2
-    b = leaf[2]/2
-    c = leaf[1]/2+1//2
-    d = leaf[2]/2+1//2
+    a = leaf.a/2
+    b = leaf.b/2
+    c = leaf.a/2+1//2
+    d = leaf.b/2+1//2
 
     if α/2<=a #then α/2<a<1/2
         if b<α/2
-            return [(a,d),(c,b)]
+            return [Leaf(a,d),Leaf(c,b)]
         else
-            return [(a,b),(c,d)]
+            return [Leaf(a,b),Leaf(c,d)]
         end
     else #then 0<a<α/2
         if b<α/2
-            return [(a,b),(c,d)]
+            return [Leaf(a,b),Leaf(c,d)]
         else
-            return [(a,d),(c,b)]
+            return [Leaf(a,d),Leaf(c,b)]
         end
     end
 end
@@ -70,5 +87,58 @@ function show_lamination(alpha)
     return f
 end
 
+function linked(X::Leaf,Y::Leaf)
+    if X.b < Y.a 
+        return false
+    elseif Y.b < X.a
+        return false
+    elseif X.a < Y.a && Y.a < X.b
+        if Y.b < X.b 
+            return false
+        else
+            return true
+        end
+    elseif Y.a < X.a && X.a < Y.b
+        if X.b < Y.b 
+            return false
+        else
+            return true
+        end
+    else
+        error("you missed a case")
+    end
+end
 
+function conjugate(angle::Rational)
+    orb = orbit(angle)
+    n = period(orb)
 
+    halfa = angle/2
+    halfb = angle/2 + 1//2
+
+    if halfa in orb.items
+        theta = [halfb]
+    elseif halfb in orb.items
+        theta = [halfa]
+    else
+        error("the orbit should contain one half")
+    end
+
+    criticalleaf = Leaf(halfa,halfb)
+
+    for k in 2:n
+        a = theta[k-1]/2
+        b = theta[k-1]/2 + 1//2
+
+        if ! linked(criticalleaf,Leaf(a,orb[n-k+1]))
+            push!(theta,a)
+        elseif ! linked(criticalleaf, Leaf(b,orb[n-k+1]))
+            push!(theta,b)
+        else
+            error("one leaf should be unlinked")
+        end
+    end
+
+    return angle + (theta[n] - angle)//(1 - 1//(2^n))
+
+end

@@ -28,7 +28,7 @@ function dynamicrays(c::Complex,angle::Rational)
             if da < db
                 append!(raylist[target],path_sqrt(-c .+ raylist[source][end-num+1:end]))
             elseif db < da
-                append!(raylist[ii],-1 .* path_sqrt(-c .+ raylist[source][end-num+1:end]))
+                append!(raylist[target],-1 .* path_sqrt(-c .+ raylist[source][end-num+1:end]))
             else
                 return error("can't decide what to glue")
             end     
@@ -53,4 +53,8 @@ function plotrays(rays::Vector{Vector{ComplexF64}})
 
     return fig
 
+end
+
+function plotrays(c::Complex,angle::Rational)
+    return plotrays(dynamicrays(c::Complex,angle::Rational))
 end
