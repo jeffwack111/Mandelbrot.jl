@@ -2,7 +2,7 @@ using IterTools
 using CairoMakie
 using ColorSchemes
 include("SpiderFuncs.jl")
-include("Sequences.jl")
+include("AngleDoubling.jl")
 
 struct SpiderInfo
     orbit::Vector{Rational}
@@ -13,7 +13,7 @@ end
 function SpiderInfo(angle::Rational)
 
     orb = orbit(angle)
-    K = kneadingsequence(orb)
+    K = kneadingsequence(angle)
 
     return SpiderInfo(orb.items,K.items,K.preperiod)
 

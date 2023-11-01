@@ -8,7 +8,7 @@ end
 
 import Base.==
 function ==(x::Sequence,y::Sequence)
-    return x.items==y.items && x.preperiod==x.preperiod
+    return x.items==y.items && x.preperiod==y.preperiod
 end
 
 function Base.getindex(S::Sequence, ii::Int)

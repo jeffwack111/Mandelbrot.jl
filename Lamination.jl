@@ -16,7 +16,10 @@ struct Leaf
     end
 end
 
-
+import Base.==
+function ==(x::Leaf,y::Leaf)
+    return x.a==y.a && x.b==y.b
+end
 
 function plot_leaf!(leaf::Leaf,color)
     a = leaf.a
@@ -33,6 +36,29 @@ function plot_leaf!(leaf::Leaf,color)
         lines!([real(exp(2*π*1im*a)),real(exp(2*π*1im*b))],[imag(exp(2*π*1im*a)),imag(exp(2*π*1im*b))],color = color)
     end
 end
+
+
+
+function image(leaf::Leaf)
+    c = (leaf.a*2)%1
+    d = (leaf.b*2)%1
+    return Leaf(c,d)
+end
+
+function orbit(leaf::Leaf)
+    items = Leaf[]
+
+    while isempty(findall(x->x==leaf,items))
+        push!(items,leaf)
+        leaf = image(leaf)
+    end
+
+    preperiod = findall(x->x==leaf,items)[1] - 1
+
+    return Sequence(items,preperiod)
+    
+end
+
 
 function pre_images(leaf::Leaf, α)
     #assume that leaf[2] is counterclockwise of leaf[1]
@@ -141,4 +167,24 @@ function conjugate(angle::Rational)
 
     return angle + (theta[n] - angle)//(1 - 1//(2^n))
 
+end
+
+function hubbardtree(angle::Rational)
+    conjugateangle = conjugate(angle)
+    leaf = Leaf(angle,conjugateangle)
+    orb = orbit(leaf)
+
+    C = colorschemes[:southwest].colors
+
+    f = Figure()
+    ax = Axis(f[1, 1],aspect = 1)
+    xlims!(ax,-2,2)
+    ylims!(ax,-2,2)
+    hidedecorations!(ax)
+    arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
+    for (ii,L) in enumerate(orb.items)
+        plot_leaf!(L,C[mod1(ii,10)])
+    end
+
+    return f
 end
