@@ -79,6 +79,13 @@ function rhoorbit(kneadingsequence::Sequence,n::Int)
     end
 end
 
+function rhoorbit(K::Sequence)
+    function r(n::Int)
+        return rhoorbit(K,n)
+    end
+    return r
+end
+
 #works only for strictly periodic kneading sequences
 function internaladdress(K::Sequence)
     return rhoorbit(K,1)
@@ -89,7 +96,8 @@ function internaladdress(angle::Rational)
 end
 
 #Works only for finite internal addresses
-function kneadingsequence(internaladdress::Vector{Int})
+function kneadingsequence(intadd::Vector{Int})
+    internaladdress = copy(intadd)
     if internaladdress == [1]
         return Sequence(['A'],0)
     else
@@ -125,5 +133,30 @@ function admissible(kneadingsequence::Sequence,m::Int)
     end
 end
 
+#TreesBook pg 145
+function denominators(S::Vector{Int})
+    n = length(S) - 1
+    #the last entry has no angle #page 143
+
+    K = kneadingsequence(S)
+    p = rhoorbit(K)
+
+    q = Int[]
+
+    for k in 1:n
+        r = mod1(S[k+1],S[k])
+        orb = p(r)
+        if S[k] in orb
+            qk = (S[k+1] - r)/S[k] + 1
+
+        else
+            qk = (S[k+1] - r)/S[k] + 2
+
+        end
+        push!(q,qk)
+    end
+
+    return q
+end
 
 
