@@ -55,6 +55,22 @@ function binary(angle::Rational)
 
 end
 
+#this better be a sequence of 1s and 0s
+function angle(binary::Sequence)
+    theta = 0//1
+    k = period(binary)
+    r = 1//(1//1-(2//1)^-k)
+    for (ii,digit) in enumerate(binary.items)
+        if digit=='1' 
+            if  ii<binary.preperiod
+                theta += (2//1)^(-ii)
+            else 
+                theta += r*(2//1)^(-ii)
+            end
+        end
+    end
+    return theta
+end
 
 function rho(kneadingsequence::Sequence,n::Int)
     if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0
@@ -158,5 +174,25 @@ function denominators(S::Vector{Int})
 
     return q
 end
+
+function numembeddings(I::Vector{Int})
+    D = denominators(I)
+    n = 1
+    for d in D
+        n = n*totient(d) #The number of integers less than d and coprime
+    end
+    return n
+end
+
+function numembeddings(angle::Rational)
+    return numembeddings(internaladdress(angle))
+end
+
+function period(angle::Rational)
+    return period(orbit(angle))
+end
+
+
+
 
 
