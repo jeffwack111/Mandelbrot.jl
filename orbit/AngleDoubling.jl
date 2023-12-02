@@ -1,4 +1,4 @@
-include("Sequences.jl")
+include("Orbits.jl")
 
 function orbit(angle::Rational)
     items = Rational[]
@@ -11,11 +11,11 @@ function orbit(angle::Rational)
 
     preperiod = findall(x->x==angle,items)[1] - 1
 
-    return Sequence(items,preperiod)
+    return Orbit(items,preperiod)
     
 end
 
-function thetaitinerary(theta::Rational,orb::Sequence)
+function thetaitinerary(theta::Rational,orb::Orbit)
     a = theta/2
     b = (theta+1)/2
     itinerary = Char[]
@@ -32,7 +32,7 @@ function thetaitinerary(theta::Rational,orb::Sequence)
         end
     end
     
-    return Sequence(itinerary,orb.preperiod)
+    return Orbit(itinerary,orb.preperiod)
 end
 
 function kneadingsequence(angle::Rational)
@@ -51,12 +51,12 @@ function binary(angle::Rational)
             push!(itinerary,'1')
         end
     end
-    return Sequence(collect(itinerary),orb.preperiod)
+    return Orbit(collect(itinerary),orb.preperiod)
 
 end
 
 #this better be a sequence of 1s and 0s
-function angle(binary::Sequence)
+function angle(binary::Orbit)
     theta = 0//1
     k = period(binary)
     r = 1//(1//1-(2//1)^-k)
@@ -72,7 +72,7 @@ function angle(binary::Sequence)
     return theta
 end
 
-function rho(kneadingsequence::Sequence,n::Int)
+function rho(kneadingsequence::Orbit,n::Int)
     if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0
         return Inf
     end
@@ -83,7 +83,7 @@ function rho(kneadingsequence::Sequence,n::Int)
     return k
 end
 
-function rhoorbit(kneadingsequence::Sequence,n::Int) 
+function rhoorbit(kneadingsequence::Orbit,n::Int) 
     if kneadingsequence.preperiod == 0
         orbit = [n]
         while rho(kneadingsequence,orbit[end]) !== Inf
@@ -95,7 +95,7 @@ function rhoorbit(kneadingsequence::Sequence,n::Int)
     end
 end
 
-function rhoorbit(K::Sequence)
+function rhoorbit(K::Orbit)
     function r(n::Int)
         return rhoorbit(K,n)
     end
@@ -103,7 +103,7 @@ function rhoorbit(K::Sequence)
 end
 
 #works only for strictly periodic kneading sequences
-function internaladdress(K::Sequence)
+function internaladdress(K::Orbit)
     return rhoorbit(K,1)
 end
 
@@ -115,7 +115,7 @@ end
 function kneadingsequence(intadd::Vector{Int})
     internaladdress = copy(intadd)
     if internaladdress == [1]
-        return Sequence(['A'],0)
+        return Orbit(['A'],0)
     else
         s = pop!(internaladdress)
         K = kneadingsequence(internaladdress)
@@ -125,11 +125,11 @@ function kneadingsequence(intadd::Vector{Int})
         else
             push!(R,'A')
         end
-        return Sequence(R,0)
+        return Orbit(R,0)
     end
 end
 
-function admissible(kneadingsequence::Sequence,m::Int)
+function admissible(kneadingsequence::Orbit,m::Int)
     if m in internaladdress(kneadingsequence)
         return true
     else

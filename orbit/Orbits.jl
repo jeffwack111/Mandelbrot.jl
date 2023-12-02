@@ -1,26 +1,29 @@
 using Primes
 using IterTools
 
-struct Sequence
+struct Orbit
     items::Vector
     preperiod::Int
+
+    #A constructor must take a seed and a map. It better terminate! How do we make these safe to construct?
+
 end
 
 import Base.==
-function ==(x::Sequence,y::Sequence)
+function ==(x::Orbit,y::Orbit)
     return x.items==y.items && x.preperiod==y.preperiod
 end
 
-function Base.getindex(S::Sequence, ii::Int)
+function Base.getindex(S::Orbit, ii::Int)
     k = length(S.items) - S.preperiod
     return S.items[mod1(ii-S.preperiod,k)]
 end
 
-function Base.getindex(S::Sequence, I::UnitRange)
+function Base.getindex(S::Orbit, I::UnitRange)
     return [S[ii] for ii in I]
 end
 
-function period(S::Sequence)
+function period(S::Orbit)
     return length(S.items) - S.preperiod
 end
 
@@ -37,7 +40,7 @@ function removerepetend(r::Vector,p::Vector)
     end
 end
 
-function reduce(seq::Sequence)
+function reduce(seq::Orbit)
     #first check that the periodic part is prime
     repetend = seq.items[(seq.preperiod+1):end]
     k = length(repetend)
@@ -59,26 +62,26 @@ function reduce(seq::Sequence)
             pop!(preperiod)
             circshift!(repetend,1)
         end
-        return Sequence(append!(copy(preperiod),repetend),length(preperiod)) 
+        return Orbit(append!(copy(preperiod),repetend),length(preperiod)) 
     else
-        return Sequence(repetend,0)
+        return Orbit(repetend,0)
     end
 
 end
 
     
 
-function goesto(S::Sequence)
+function goesto(S::Orbit)
     return push!(collect(2:length(S.items)),S.preperiod+1)
 end
 
-function shift(seq::Sequence)
+function shift(seq::Orbit)
     if seq.preperiod == 0 
         #then seq is periodic
-        return Sequence(circshift(copy(seq.items),-1),0)
+        return Orbit(circshift(copy(seq.items),-1),0)
     else
         #then the sequence is preperiodic
-        return Sequence(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
+        return Orbit(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
     end  
 end
 
