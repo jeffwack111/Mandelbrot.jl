@@ -1,29 +1,26 @@
 using Primes
 using IterTools
 
-struct Orbit
+struct Sequence
     items::Vector
     preperiod::Int
-
-    #A constructor must take a seed and a map. It better terminate! How do we make these safe to construct?
-
 end
 
 import Base.==
-function ==(x::Orbit,y::Orbit)
+function ==(x::Sequence,y::Sequence)
     return x.items==y.items && x.preperiod==y.preperiod
 end
 
-function Base.getindex(S::Orbit, ii::Int)
+function Base.getindex(S::Sequence, ii::Int)
     k = length(S.items) - S.preperiod
     return S.items[mod1(ii-S.preperiod,k)]
 end
 
-function Base.getindex(S::Orbit, I::UnitRange)
+function Base.getindex(S::Sequence, I::UnitRange)
     return [S[ii] for ii in I]
 end
 
-function period(S::Orbit)
+function period(S::Sequence)
     return length(S.items) - S.preperiod
 end
 
@@ -40,7 +37,7 @@ function removerepetend(r::Vector,p::Vector)
     end
 end
 
-function reduce(seq::Orbit)
+function reduce(seq::Sequence)
     #first check that the periodic part is prime
     repetend = seq.items[(seq.preperiod+1):end]
     k = length(repetend)
@@ -62,26 +59,26 @@ function reduce(seq::Orbit)
             pop!(preperiod)
             circshift!(repetend,1)
         end
-        return Orbit(append!(copy(preperiod),repetend),length(preperiod)) 
+        return Sequence(append!(copy(preperiod),repetend),length(preperiod)) 
     else
-        return Orbit(repetend,0)
+        return Sequence(repetend,0)
     end
 
 end
 
     
 
-function goesto(S::Orbit)
+function goesto(S::Sequence)
     return push!(collect(2:length(S.items)),S.preperiod+1)
 end
 
-function shift(seq::Orbit)
+function shift(seq::Sequence)
     if seq.preperiod == 0 
         #then seq is periodic
-        return Orbit(circshift(copy(seq.items),-1),0)
+        return Sequence(circshift(copy(seq.items),-1),0)
     else
         #then the sequence is preperiodic
-        return Orbit(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
+        return Sequence(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
     end  
 end
 

@@ -1,7 +1,7 @@
 using CairoMakie
 using ColorSchemes
-include("AngleDoubling.jl")
-include("SpiderFuncs.jl")
+include("../sequences/AngleDoubling.jl")
+include("../spiders/SpiderFuncs.jl")
 
 function dynamicrays(c::Complex,angle::Rational)
     orb = orbit(angle)
