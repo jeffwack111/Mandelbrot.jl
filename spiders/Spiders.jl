@@ -2,7 +2,7 @@ using IterTools
 using CairoMakie
 using ColorSchemes
 include("SpiderFuncs.jl")
-include("AngleDoubling.jl")
+include("../sequences/AngleDoubling.jl")
 
 struct SpiderInfo
     orbit::Vector{Rational}

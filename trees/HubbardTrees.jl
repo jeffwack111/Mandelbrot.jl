@@ -3,7 +3,7 @@
 #Admissibility of kneading sequences and structure of Hubbard trees for quadratic polynomials
 #Henk Bruin, Dierk Schleicher
 
-include("AngleDoubling.jl")
+include("../sequences/AngleDoubling.jl")
 
 function hubbardtree(seq::Sequence)
     orbit = criticalorbit(seq)

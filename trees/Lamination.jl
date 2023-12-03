@@ -1,7 +1,7 @@
 using CairoMakie
 using ColorSchemes
 
-include("AngleDoubling.jl")
+include("../sequences/AngleDoubling.jl")
 
 struct Leaf
     a::Rational

@@ -36,13 +36,13 @@ function thetaitinerary(theta::Rational,orb::Sequence)
 end
 
 function kneadingsequence(angle::Rational)
-    orb = orbit(angle)
+    orb = Sequence(angle)
     return thetaitinerary(angle,orb)
 end
 
 function binary(angle::Rational)
     
-    orb = orbit(angle)
+    orb = Sequence(angle)
     itinerary = Char[]
     for theta in orb.items
         if theta < 1//2
@@ -83,32 +83,32 @@ function rho(kneadingsequence::Sequence,n::Int)
     return k
 end
 
-function rhoorbit(kneadingsequence::Sequence,n::Int) 
+function rhoSequence(kneadingsequence::Sequence,n::Int) 
     if kneadingsequence.preperiod == 0
-        orbit = [n]
-        while rho(kneadingsequence,orbit[end]) !== Inf
-            append!(orbit,rho(kneadingsequence,orbit[end]))
+        Sequence = [n]
+        while rho(kneadingsequence,Sequence[end]) !== Inf
+            append!(Sequence,rho(kneadingsequence,Sequence[end]))
         end
-        return orbit
+        return Sequence
     else
         error("cant deal with preperiodic")
     end
 end
 
-function rhoorbit(K::Sequence)
+function rhoSequence(K::Sequence)
     function r(n::Int)
-        return rhoorbit(K,n)
+        return rhoSequence(K,n)
     end
     return r
 end
 
 #works only for strictly periodic kneading sequences
 function internaladdress(K::Sequence)
-    return rhoorbit(K,1)
+    return rhoSequence(K,1)
 end
 
 function internaladdress(angle::Rational)
-    return rhoorbit(kneadingsequence(angle),1)    
+    return rhoSequence(kneadingsequence(angle),1)    
 end
 
 #Works only for finite internal addresses
@@ -140,7 +140,7 @@ function admissible(kneadingsequence::Sequence,m::Int)
         end
         if rho(kneadingsequence, m) != Inf
             for r in 1:m
-                if mod(r,m) == mod(rho(kneadingsequence, m),m) && ! (m in rhoorbit(kneadingsequence,r))
+                if mod(r,m) == mod(rho(kneadingsequence, m),m) && ! (m in rhoSequence(kneadingsequence,r))
                     return true
                 end
             end
@@ -155,7 +155,7 @@ function denominators(S::Vector{Int})
     #the last entry has no angle #page 143
 
     K = kneadingsequence(S)
-    p = rhoorbit(K)
+    p = rhoSequence(K)
 
     q = Int[]
 
@@ -189,7 +189,7 @@ function numembeddings(angle::Rational)
 end
 
 function period(angle::Rational)
-    return period(orbit(angle))
+    return period(Sequence(angle))
 end
 
 
