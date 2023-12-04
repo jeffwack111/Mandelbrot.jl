@@ -1,6 +1,4 @@
-using Images
-using ColorSchemes
-include("JuliaSet.jl")
+include("RenderFractal.jl")
 
 #From page 40 of "The Beauty of Fractals"
 epsilon = 0.001
@@ -12,20 +10,15 @@ J = julia_patch(0.0+0.0im,2.0+0.0im)
 pic = zeros(RGB{Float64},size(J))
 
 maxiter = 100
+f(z) = z*z - 1
 
-function binarycolor(z::Complex,c::Complex,eps::Real,maxiter::Int)
-    iter = 0
+PA = problem_array(J,f,escape(1/epsilon),100)
 
-    while iter<maxiter && abs2(z) > epsilon && abs2(z) < 1/epsilon 
-        z = z^2 + c
-        iter += 1
-    end
-    
-    if angle(z)/(2*pi) <= 0
-        return RGB{Float64}(1,1,1)
-    else
-        return RGB{Float64}(0,0,0)
-    end
+binarycolor.(PA, blackwhite(0))
+
+#=
+#This needs to be less of a mess
+for ii in 1:200
+    save("binarydecomp$ii.png", binarycolor.(J, -0.12256+0.74486im,escape(1/epsilon),blackwhite(ii/200),maxiter))
 end
-
-pic = binarycolor.(J,-2.0+0.0im,epsilon,maxiter)
+=#

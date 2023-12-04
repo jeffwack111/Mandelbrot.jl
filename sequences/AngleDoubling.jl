@@ -36,13 +36,13 @@ function thetaitinerary(theta::Rational,orb::Sequence)
 end
 
 function kneadingsequence(angle::Rational)
-    orb = Sequence(angle)
+    orb = orbit(angle)
     return thetaitinerary(angle,orb)
 end
 
 function binary(angle::Rational)
     
-    orb = Sequence(angle)
+    orb = orbit(angle)
     itinerary = Char[]
     for theta in orb.items
         if theta < 1//2
@@ -55,6 +55,7 @@ function binary(angle::Rational)
 
 end
 
+#=
 #this better be a sequence of 1s and 0s
 function angle(binary::Sequence)
     theta = 0//1
@@ -71,6 +72,7 @@ function angle(binary::Sequence)
     end
     return theta
 end
+=#
 
 function rho(kneadingsequence::Sequence,n::Int)
     if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0

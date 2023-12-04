@@ -1,54 +1,57 @@
+using CairoMakie
 using Images
-using ColorSchemes
+using ColorSchemes 
 
 struct EscapeTimeProblem
     z0::Number
     f::Function
-    R2::Real
-    max_iter::Int
+    stop::Function
+    maxiter::Int
 end
 
-function problem_array(patch::Matrix,f::Function,R2::Real,max_iter::Int)
+function problem_array(patch::Matrix,f::Function,s::Function,maxiter::Int)
+
     PA = Array{EscapeTimeProblem}(undef,size(patch)...)
     for i in eachindex(patch)
-        PA[i] = EscapeTimeProblem(patch[i],f,R2,max_iter)
+        PA[i] = EscapeTimeProblem(patch[i],f,s,maxiter)
     end
     return PA
 end
 
-function problem_array(patch::Matrix,R2::Real,max_iter::Int)
-    PA = Array{EscapeTimeProblem}(undef,size(patch)...)
-    for i in eachindex(patch)
-        f(z) = z*z + patch[i]
-        PA[i] = EscapeTimeProblem(0.0+0.0im,f,R2,max_iter)
-    end
-    return PA
-end
+#We can unify the following two funcitons
 
-
-function escape_time(prob::EscapeTimeProblem)
+function escape_time(prob::EscapeTimeProblem,colors::Vector{RGB{Float64}})
     z = prob.z0
-    for iter in 1:prob.max_iter
-        if abs2(z) < prob.R2
-            z = prob.f(z)
+    for iter in 1:prob.maxiter
+        if prob.stop(z) == true
+            return colors[mod1(iter - 1,256)]
         else
-            return (iter - 1) % UInt8
+            z = prob.f(z)
         end
     end
-    return prob.max_iter % UInt8
+    return colors[mod1(iter,256)]
 end
 
-function escape_time(z0::Number,f::Function,radius_squared::Real,max_iter::Int)
-    #here f must be a function of a single variable
-    z = z0
-    for iter in 1:max_iter
-        if abs2(z) < radius_squared
-            z = f(z)
+
+function binarycolor(prob::EscapeTimeProblem, color::Function)
+    z = prob.z0
+    #=
+    This function acts as a stop condition
+    "You shall stop."
+    =#
+    for iter in 1:prob.maxiter
+        if prob.stop(z) == true
+            return color(z)
         else
-            return (iter - 1) % UInt8
+            z = prob.f(z)
         end
     end
-    return max_iter % UInt8
+    #=
+    As well as a function which takes a point satisfying the stop condition and gives it a color,
+    "Hi, thanks for coming, here's a color"
+    =#
+    return RGB{Float64}(0.7,0.2,0.8)
+
 end
 
 function normalize_escape_time!(patch::Matrix)
@@ -62,3 +65,58 @@ function apply_color(patch::Matrix,colors::Vector{RGB{Float64}})
     end
     return pic
 end
+
+
+
+function blackwhite(alpha::Real)
+
+    function color(z::Complex)
+        turns = angle(z)/(2*pi) + 0.5
+        if  turns >= alpha/2 && turns <alpha/2+0.5
+            return RGB{Float64}(1,1,1)
+        else
+            return RGB{Float64}(0,0,0)
+        end
+    end
+
+    return color
+
+end
+
+function escape(Radius::Real)
+
+    function escaped(z::Number)
+        if abs2(z) > Radius
+            return true
+        else
+            return false
+        end
+    end
+
+    return escaped
+end
+
+
+
+
+
+
+function julia_patch(center::Complex, right_center::Complex)
+    #Overall strategy: 
+    #we will first compute the patch at the correct scale and orientation, centered at the origin
+    #we will then translate the patch to to correct location and return it
+
+    top_center = 1.0*im*right_center
+    #points from the origin to the top of the frame
+
+    horizontal_axis = LinRange(-right_center,right_center,1000)
+    vertical_axis = LinRange(-top_center,top_center,1000)
+
+    origin_patch = transpose(horizontal_axis) .+ vertical_axis
+    #we want a matrix whose i,jth element is H[i] + V[j]
+
+    return origin_patch .+ center
+end
+
+
+
