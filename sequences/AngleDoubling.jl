@@ -55,7 +55,7 @@ function binary(angle::Rational)
 
 end
 
-#=
+
 #this better be a sequence of 1s and 0s
 function angle(binary::Sequence)
     theta = 0//1
@@ -72,7 +72,7 @@ function angle(binary::Sequence)
     end
     return theta
 end
-=#
+
 
 function rho(kneadingsequence::Sequence,n::Int)
     if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0

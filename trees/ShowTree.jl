@@ -4,9 +4,7 @@ using GraphMakie, Graphs
 
 include("HubbardTrees.jl")
 
-function showtree(angle::Rational)
-
-    A, markedpoints = hubbardtree(angle)
+function showtree((A, markedpoints))
 
     g = SimpleGraph(A)
     layout = Stress()
@@ -15,4 +13,12 @@ function showtree(angle::Rational)
     hidedecorations!(ax); hidespines!(ax); ax.aspect = DataAspect(); f
 
     return f
+end
+
+function showtree(angle::Rational)
+    return showtree(hubbardtree(angle))
+end
+
+function showtree(int::Vector{Int})
+    return showtree(hubbardtree(int))
 end

@@ -1,7 +1,7 @@
 using Symbolics
 using Primes
 
-#This seems to tap out at order 8, where it returns a polynomial with teeny tiny coefficients
+#This seems to tap out at order 8, where it returns a polynomial with teeny tiny coefficients. Those coefficients should be huge
 
 @variables z,c
 

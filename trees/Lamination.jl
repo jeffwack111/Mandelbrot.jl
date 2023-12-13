@@ -3,6 +3,8 @@ using ColorSchemes
 
 include("../sequences/AngleDoubling.jl")
 
+#The Structure of the Set of Quadratic Invariant Laminations
+
 struct Leaf
     a::Rational
     b::Rational
@@ -84,8 +86,9 @@ function pre_images(leaf::Leaf, α)
     end
 end
 
-function lamination(alpha)
-    leaves = [[(alpha/2,alpha/2+1//2)]]
+#Proposition II.4.5, page 69
+function saturation(alpha)
+    leaves = [[Leaf(alpha/2,alpha/2+1//2)]]
     for j = 1:9
         children = copy(leaves[end])
         parents = vcat([pre_images(leaf,alpha) for leaf in children]...)
