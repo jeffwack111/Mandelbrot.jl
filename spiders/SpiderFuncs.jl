@@ -1,9 +1,5 @@
 using IterTools
 
-function P_inv(z::Complex,λ::Complex,branch)
-    return 2*(branch*sqrt(z/λ)-1)
-end
-
 function region(point::Complex,boundary::Vector{<:Complex})
     x2 = real(point)
     y2 = imag(point)
@@ -100,7 +96,7 @@ end
 function path_sqrt(path::Vector{ComplexF64})
     branch = 1
     newpath = [sqrt(path[1])]
-    cut = (0.0 + 0.0im, -100 + 0.0im)
+    cut = (0.0 + 0.0im, -1000 + 0.0im)
     for segment in partition(path,2,1)
         if test_intersection(cut...,segment...)
             branch *= -1

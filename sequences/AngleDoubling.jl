@@ -57,7 +57,7 @@ end
 
 
 #this better be a sequence of 1s and 0s
-function angle(binary::Sequence)
+function angleof(binary::Sequence)
     theta = 0//1
     k = period(binary)
     r = 1//(1//1-(2//1)^-k)

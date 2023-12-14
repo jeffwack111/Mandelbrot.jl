@@ -26,7 +26,7 @@ function showspider(angle::Rational,frames::Int)
 
     n = length(list[end])
 
-    record(fig,"test.gif",1:frames; framerate = 3) do i
+    record(fig,"test.gif",1:frames; framerate = 1) do i
         empty!(ax)
         spider = list[i]
         for (j ,leg) in enumerate(spider)
@@ -35,6 +35,6 @@ function showspider(angle::Rational,frames::Int)
 
     end
         
-end
+end 
 
 

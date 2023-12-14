@@ -10,10 +10,10 @@ struct SpiderInfo
     preperiod::Int
 end
 
-function SpiderInfo(angle::Rational)
+function SpiderInfo(theta::Rational)
 
-    orb = orbit(angle)
-    K = kneadingsequence(angle)
+    orb = orbit(theta)
+    K = kneadingsequence(theta)
 
     return SpiderInfo(orb.items,K.items,K.preperiod)
 
@@ -59,12 +59,7 @@ function stats(legs::Vector{Vector{ComplexF64}})
     println(radius)
 end
 
-function devspidermap(angle::Rational)
-    return devspidermap(SpiderInfo(angle),standardlegs(angle))
-end
-
-
-function devspidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
+function devHSspidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
 
     fig = Figure()
     ax1 = Axis(fig[1, 1])
@@ -133,7 +128,7 @@ function devspidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
         lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
     end
 
-    ax4 = Axis(fig[2, 2])
+    ax4 = Axis(fig[2, 2]) 
     r = 4
     xlims!(-r,r)
     ylims!(-r,r)
@@ -152,7 +147,7 @@ function devspidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
 
 end
 
-function spidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
+function HSspidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
     λ = Legs[2][1]
 
     regions = "AB"
@@ -202,4 +197,85 @@ function spidermap(S::SpiderInfo,Legs::Vector{Vector{ComplexF64}})
     
 end
 
+function spidermap(S::SpiderInfo, Legs::Vector{Vector{ComplexF64}})
+    λ = Legs[2][1] #the parameter of our polynomial map z -> λ(1+z/2)^2
+    a = (angle(Legs[1][end]/λ)/(2*pi)+1)%1 #the angle whose halves will define the boundary between regions A and B at infinity. in full turns
 
+    n = length(S.orbit)
+
+    newLegs = Vector{Vector{ComplexF64}}(undef,n)
+
+    #leg 1 goes first
+    newLegs[1] = path_sqrt(Legs[2]./λ)
+
+    theta1 = (angle(newLegs[1][end])/(2*pi)+1)%1 #gives the angle of the shoulder in full turns
+    #this angle lays in region A by definition. 
+
+    if a/2 < theta1 && theta1 < (a+1)/2
+        for ii in 2:n-1
+            #first find the right half plane preimage of the shoulder
+            u = sqrt(Legs[ii+1][end]./λ)
+            thetau = (angle(u)/(2*pi)+1)%1
+    
+            if a/2 < thetau && thetau < (a+1)/2 
+                if S.kneading_sequence[ii] == 'A' #then this is the correct preimage
+                    newLegs[ii] = path_sqrt(reverse(Legs[ii+1])./λ)
+                else
+                    newLegs[ii] = -1 .* path_sqrt(reverse(Legs[ii+1])./λ)
+                end
+            else
+                if S.kneading_sequence[ii] == 'B' #then this is the correct preimage
+                    newLegs[ii] = path_sqrt(reverse(Legs[ii+1])./λ)
+                else
+                    newLegs[ii] = -1 .* path_sqrt(reverse(Legs[ii+1])./λ)
+                end
+            end
+        end
+    else
+        for ii in 2:n-1
+            #first find the right half plane preimage of the shoulder
+            u = sqrt(Legs[ii+1][end]./λ)
+            thetau = (angle(u)/(2*pi)+1)%1
+    
+            if a/2 < thetau && thetau < (a+1)/2 
+                if S.kneading_sequence[ii] == 'B' #then this is the correct preimage
+                    newLegs[ii] =reverse(path_sqrt(reverse(Legs[ii+1])./λ))
+                else
+                    newLegs[ii] = reverse(-1 .* path_sqrt(reverse(Legs[ii+1])./λ))
+                end
+            else
+                if S.kneading_sequence[ii] == 'A' #then this is the correct preimage
+                    newLegs[ii] = reverse(path_sqrt(reverse(Legs[ii+1])./λ))
+                else
+                    newLegs[ii] = reverse(-1 .* path_sqrt(reverse(Legs[ii+1])./λ))
+                end
+            end
+        end
+    end
+  
+
+    regions = "AB"
+
+    line = (Legs[2][1],Legs[S.preperiod+1][1])
+    pairs = partition(Legs[1],2,1)
+    intersections = Vector{Bool}(undef,length(pairs))
+    for (j,pair) in enumerate(pairs)
+        intersections[j] = test_intersection(pair...,line...)
+    end
+    region_index = sum(intersections)%2 + 1
+    if regions[region_index] == S.kneading_sequence[end]
+        newLegs[end] = path_sqrt(Legs[S.preperiod+1]./λ)
+    else
+        newLegs[end] = -1 .* path_sqrt(Legs[S.preperiod+1]./λ)
+    end
+
+    for leg in newLegs
+        leg .+= (-1.0+0.0im)
+    end
+    newLegs .*= (2.0+0.0im)
+
+    grow!(newLegs,10,10)
+
+    return newLegs
+end
+        
