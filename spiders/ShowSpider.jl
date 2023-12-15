@@ -26,14 +26,16 @@ function showspider(angle::Rational,frames::Int)
 
     n = length(list[end])
 
-    record(fig,"test.gif",1:frames; framerate = 1) do i
+    record(fig,"test.gif",1:frames; framerate = 3) do i
         empty!(ax)
         spider = list[i]
         for (j ,leg) in enumerate(spider)
             lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
+            text!(real(leg[1]),imag(leg[1]);text = "$j")
         end
+        
 
-    end
+    end 
         
 end 
 

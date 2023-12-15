@@ -212,61 +212,86 @@ function spidermap(S::SpiderInfo, Legs::Vector{Vector{ComplexF64}})
     #this angle lays in region A by definition. 
 
     if a/2 < theta1 && theta1 < (a+1)/2
-        for ii in 2:n-1
-            #first find the right half plane preimage of the shoulder
-            u = sqrt(Legs[ii+1][end]./λ)
-            thetau = (angle(u)/(2*pi)+1)%1
-    
-            if a/2 < thetau && thetau < (a+1)/2 
-                if S.kneading_sequence[ii] == 'A' #then this is the correct preimage
-                    newLegs[ii] = path_sqrt(reverse(Legs[ii+1])./λ)
-                else
-                    newLegs[ii] = -1 .* path_sqrt(reverse(Legs[ii+1])./λ)
-                end
-            else
-                if S.kneading_sequence[ii] == 'B' #then this is the correct preimage
-                    newLegs[ii] = path_sqrt(reverse(Legs[ii+1])./λ)
-                else
-                    newLegs[ii] = -1 .* path_sqrt(reverse(Legs[ii+1])./λ)
-                end
-            end
-        end
+        cregion = 'A'
+        dregion = 'B'
     else
-        for ii in 2:n-1
-            #first find the right half plane preimage of the shoulder
-            u = sqrt(Legs[ii+1][end]./λ)
-            thetau = (angle(u)/(2*pi)+1)%1
+        cregion = 'B'
+        dregion = 'A'
+    end
     
-            if a/2 < thetau && thetau < (a+1)/2 
-                if S.kneading_sequence[ii] == 'B' #then this is the correct preimage
-                    newLegs[ii] =reverse(path_sqrt(reverse(Legs[ii+1])./λ))
-                else
-                    newLegs[ii] = reverse(-1 .* path_sqrt(reverse(Legs[ii+1])./λ))
-                end
+    for ii in 2:n-1
+        #first find the right half plane preimage of the shoulder
+        u = sqrt(Legs[ii+1][end]./λ)
+        thetau = (angle(u)/(2*pi)+1)%1
+
+        if a/2 < thetau && thetau < (a+1)/2 #thetau is in the connected region
+            if S.kneading_sequence[ii] == cregion #then this is the correct preimage
+                newLegs[ii] = reverse(path_sqrt(reverse(Legs[ii+1])./λ))
             else
-                if S.kneading_sequence[ii] == 'A' #then this is the correct preimage
-                    newLegs[ii] = reverse(path_sqrt(reverse(Legs[ii+1])./λ))
-                else
-                    newLegs[ii] = reverse(-1 .* path_sqrt(reverse(Legs[ii+1])./λ))
-                end
+                newLegs[ii] = reverse(-1 .* path_sqrt(reverse(Legs[ii+1])./λ))
+            end
+        else #thetau is in the disconnected region
+            if S.kneading_sequence[ii] == dregion #then this is the correct preimage
+                newLegs[ii] = reverse(path_sqrt(reverse(Legs[ii+1])./λ))
+            else
+                newLegs[ii] = reverse( -1 .* path_sqrt(reverse(Legs[ii+1])./λ))
             end
         end
     end
-  
 
-    regions = "AB"
+    #we will break into periodic and preperiodic cases for the last leg
+    if S.preperiod == 0 #periodic
+        u = sqrt(Legs[1][end]./λ)
+        thetau = (angle(u)/(2*pi)+1)%1
+        
+        if abs2(thetau - a/2) < abs2(thetau - (a+1)/2)
+            if cregion == 'A'
+                if S.kneading_sequence[end] == '2'
+                    newLegs[end] = reverse(path_sqrt(reverse(Legs[1])./λ))
+                else
+                    newLegs[end] = reverse(-1 .*path_sqrt(reverse(Legs[1])./λ))
+                end
+            else
+                if S.kneading_sequence[end] == '1'
+                    newLegs[end] = reverse(path_sqrt(reverse(Legs[1])./λ))
+                else
+                    newLegs[end] = reverse(-1 .*path_sqrt(reverse(Legs[1])./λ))
+                end
+            end
+        else
+            if cregion == 'A'
+                if S.kneading_sequence[end] == '1'
+                    newLegs[end] = reverse(path_sqrt(reverse(Legs[1])./λ))
+                else
+                    newLegs[end] = reverse(-1 .*path_sqrt(reverse(Legs[1])./λ))
+                end
+            else
+                if S.kneading_sequence[end] == '2'
+                    newLegs[end] = reverse(path_sqrt(reverse(Legs[1])./λ))
+                else
+                    newLegs[end] = reverse(-1 .*path_sqrt(reverse(Legs[1])./λ))
+                end
+            end
+        end
 
-    line = (Legs[2][1],Legs[S.preperiod+1][1])
-    pairs = partition(Legs[1],2,1)
-    intersections = Vector{Bool}(undef,length(pairs))
-    for (j,pair) in enumerate(pairs)
-        intersections[j] = test_intersection(pair...,line...)
-    end
-    region_index = sum(intersections)%2 + 1
-    if regions[region_index] == S.kneading_sequence[end]
-        newLegs[end] = path_sqrt(Legs[S.preperiod+1]./λ)
-    else
-        newLegs[end] = -1 .* path_sqrt(Legs[S.preperiod+1]./λ)
+    else #preperiodic
+        p = S.preperiod 
+        u = sqrt(Legs[p+1][end]./λ)
+        thetau = (angle(u)/(2*pi)+1)%1
+
+        if a/2 < thetau && thetau < (a+1)/2 #thetau is in the connected region
+            if S.kneading_sequence[end] == cregion #then this is the correct preimage
+                newLegs[end] = reverse(path_sqrt(reverse(Legs[p+1])./λ))
+            else
+                newLegs[end] = reverse(-1 .* path_sqrt(reverse(Legs[p+1])./λ))
+            end
+        else #thetau is in the disconnected region
+            if S.kneading_sequence[end] == dregion #then this is the correct preimage
+                newLegs[end] = reverse(path_sqrt(reverse(Legs[p+1])./λ))
+            else
+                newLegs[end] = reverse(-1 .* path_sqrt(reverse(Legs[p+1])./λ))
+            end
+        end
     end
 
     for leg in newLegs

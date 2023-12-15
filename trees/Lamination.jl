@@ -150,7 +150,7 @@ function conjugate(angle::Rational)
     elseif halfb in orb.items
         theta = [halfa]
     else
-        error("the orbit should contain one half")
+        error("Not a periodic angle")
     end
 
     criticalleaf = Leaf(halfa,halfb)
@@ -190,4 +190,12 @@ function hubbardtree(angle::Rational)
     end
 
     return f
+end
+
+function periodiclamination(alpha::Rational)
+    beta = conjugate(alpha)
+
+    m = Leaf(alpha,beta)
+
+    #The four images of the endpoints of m can be joined in pairs in exactly one way by leaves of length at least 1/3
 end

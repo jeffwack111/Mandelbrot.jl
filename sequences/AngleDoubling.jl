@@ -22,9 +22,9 @@ function thetaitinerary(theta::Rational,orb::Sequence)
 
     for angle in orb.items
         if angle == a
-            push!(itinerary,'*')
+            push!(itinerary,'2')
         elseif angle == b
-            push!(itinerary,'*')
+            push!(itinerary,'1')
         elseif angle > a && angle < b
             push!(itinerary,'A')
         else
