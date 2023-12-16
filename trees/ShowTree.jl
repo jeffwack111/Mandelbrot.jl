@@ -5,13 +5,9 @@ using GraphMakie, Graphs
 include("HubbardTrees.jl")
 
 function showtree((A, markedpoints))
-
-    g = SimpleGraph(A)
-    layout = Stress()
-    f, ax, p = graphplot(g, layout=layout)
-    text!(stress(g);text = string.(collect(1:size(g)[1]).-1))
-    hidedecorations!(ax); hidespines!(ax); ax.aspect = DataAspect(); f
-
+    f, ax, = graphplot(SimpleGraph(A),nlabels = string.(collect(1:size(A)[1])))
+    hidedecorations!(ax); hidespines!(ax); ax.aspect = DataAspect(); 
+    
     return f
 end
 

@@ -1,3 +1,6 @@
+#This file contains a partially working implementation of the spider algorithm as described in Hubbard and Schleicher's paper.
+#The core difference in this implementation is that the identification of the correct leg happens near zero (at the feet) rather than near infinity (at the shoulders)
+
 #NOTE: These spider legs are indexed with their feet (cloesest to zero) in position 1, and their shoulders (closest to infinity) at the end
 #This may be cause for calls to reverse()
 

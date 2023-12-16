@@ -36,6 +36,8 @@ function showspider(angle::Rational,frames::Int)
         
 
     end 
+
+    return list[end][2][end]/2
         
 end 
 

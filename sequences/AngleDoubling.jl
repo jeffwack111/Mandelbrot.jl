@@ -22,9 +22,9 @@ function thetaitinerary(theta::Rational,orb::Sequence)
 
     for angle in orb.items
         if angle == a
-            push!(itinerary,'2')
+            push!(itinerary,'*')
         elseif angle == b
-            push!(itinerary,'1')
+            push!(itinerary,'*')
         elseif angle > a && angle < b
             push!(itinerary,'A')
         else
@@ -40,9 +40,9 @@ function kneadingsequence(angle::Rational)
     return thetaitinerary(angle,orb)
 end
 
-function binary(angle::Rational)
+function binary(theta::Rational)
     
-    orb = orbit(angle)
+    orb = orbit(theta)
     itinerary = Char[]
     for theta in orb.items
         if theta < 1//2
@@ -109,8 +109,8 @@ function internaladdress(K::Sequence)
     return rhoSequence(K,1)
 end
 
-function internaladdress(angle::Rational)
-    return rhoSequence(kneadingsequence(angle),1)    
+function internaladdress(theta::Rational)
+    return rhoSequence(kneadingsequence(theta),1)    
 end
 
 #Works only for finite internal addresses
@@ -186,15 +186,33 @@ function numembeddings(I::Vector{Int})
     return n
 end
 
-function numembeddings(angle::Rational)
-    return numembeddings(internaladdress(angle))
+function numembeddings(theta::Rational)
+    return numembeddings(internaladdress(theta))
 end
 
-function period(angle::Rational)
-    return period(Sequence(angle))
+function period(theta::Rational)
+    return period(Sequence(theta))
 end
 
+#Lemma 11.14 TreesBook page 146
+function angledinternaladdress(theta::Rational)
+    intadd = internaladdress(theta)
+    denoms = denominators(intadd)
+    nums = Int[]
 
+    for ii in 1:length(intadd)-1
+        n = 0
+        for jj in 1:(denoms[ii] - 1)
+            if ((2//1)^((jj-1)*intadd[ii])*theta)%1 <= theta
+                n += 1
+            end
+        end
+        push!(nums,n)
+    end
+
+    return (intadd, nums, denoms)
+
+end
 
 
 
