@@ -1,7 +1,6 @@
-#Code written by Jeff Wack
-#Algorithms from
-#Admissibility of kneading sequences and structure of Hubbard trees for quadratic polynomials
-#Henk Bruin, Dierk Schleicher
+#Algorithms from https://eudml.org/doc/283172
+#Existence of quadratic Hubbard trees
+#Henk Bruin, Alexandra Kafll, Dierk Schleicher
 
 include("../sequences/AngleDoubling.jl") 
 
@@ -11,16 +10,18 @@ function hubbardtree(seq::Sequence)
 
     results = fill(0,(n,n,n))
 
+    #We begin with the critical orbit
     markedpoints = copy(orbit)
 
+    #All triples of points on the critical orbit are run through the triod map
     for triple in subsets(collect(enumerate(orbit)),3)
-        type,seq = iteratetriod(orbit[2],(triple[1][2],triple[2][2],triple[3][2]))
+        type,seq = iteratetriod(orbit[1],(triple[1][2],triple[2][2],triple[3][2]))
 
         if type == "branched"
-            if isempty(findall(x->x==seq,markedpoints))
-                push!(markedpoints,seq)
-                results = cat(results,1,dims=(1,2,3))
-                index = lastindex(markedpoints)
+            if isempty(findall(x->x==seq,markedpoints))#If the branch point has not been found already,
+                push!(markedpoints,seq)                #add it to the list of marked points.
+                results = cat(results,1,dims=(1,2,3))  #We then must extend the results matrix to accomodate the new marked point
+                index = lastindex(markedpoints)        
             else
                 index = findall(x->x==seq,markedpoints)[1]
             end
@@ -32,9 +33,10 @@ function hubbardtree(seq::Sequence)
 
     end
 
+    #We now run the remaining triples through the triod map
     for triple in subsets(collect(enumerate(markedpoints)),3)
-        if results[triple[1][1],triple[2][1],triple[3][1]] == 0 
-            type,seq = iteratetriod(orbit[2],(triple[1][2],triple[2][2],triple[3][2]))
+        if results[triple[1][1],triple[2][1],triple[3][1]] == 0 #skipping the ones we've done already
+            type,seq = iteratetriod(orbit[1],(triple[1][2],triple[2][2],triple[3][2]))
 
             if type == "branched"
                 index = findall(x->x==seq,markedpoints)[1]
@@ -46,6 +48,7 @@ function hubbardtree(seq::Sequence)
         end
     end
 
+    #We've now found all the marked points of the tree, so d is the number of vertices
     d = length(markedpoints)
 
     M = fill([0],(d,d))
@@ -76,9 +79,15 @@ function hubbardtree(seq::Sequence)
         end
     end
 
-    return A, markedpoints
-                    
+    #We now calculate the vector describing the dynamics of the tree.
+    #The nth entry of the vector hold the index of the image of the nth sequence under the shift map
+    F = Int[]
+    for seq in markedpoints
+        append!(F,findall(x->x==shift(seq),markedpoints)[1])
+    end
 
+    return A, F, markedpoints
+                    
 end
 
 function hubbardtree(angle::Rational)
@@ -89,7 +98,6 @@ function hubbardtree(internaladdress::Vector{Int})
     K = kneadingsequence(internaladdress)
     seq = copy(K.items)
     seq[end] = '*'
-    print(seq)
     return hubbardtree(Sequence(seq,0))
 end
 
@@ -179,13 +187,13 @@ function criticalorbit(K::Sequence)
         for i in Iterators.drop(eachindex(K.items),1)
             push!(A,shift(A[end]))
         end
-        circshift!(A,1)
         return A  
     else
-        A = [prependstar(K)]
+        A = Sequence[]
         for i in eachindex(K.items)
             push!(A,shift(A[end]))
         end
+        push!(A,prependstar(K))
         return A    
     end
 end

@@ -191,7 +191,7 @@ function numembeddings(theta::Rational)
 end
 
 function period(theta::Rational)
-    return period(Sequence(theta))
+    return period(orbit(theta))
 end
 
 #Lemma 11.14 TreesBook page 146
