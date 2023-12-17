@@ -4,6 +4,86 @@
 
 include("../sequences/AngleDoubling.jl") 
 
+function betahubbardtree(seq::Sequence)
+    orbit = criticalorbit(seq)
+
+    #We begin with the critical orbit
+    markedpoints = copy(orbit)
+    push!(markedpoints,Sequence(['B'],0))
+    push!(markedpoints,Sequence(['A','B'],1))
+
+    n = length(markedpoints)
+
+    results = fill(0,(n,n,n))
+
+    runagain = true
+    while runagain == true
+        runagain = false
+        #All triples of points on the critical orbit are run through the triod map
+        for triple in subsets(collect(enumerate(markedpoints)),3)
+            if results[triple[1][1],triple[2][1],triple[3][1]] == 0 #skipping the ones we've done already
+                type,seq = iteratetriod(orbit[1],(triple[1][2],triple[2][2],triple[3][2]))
+
+                if type == "branched"
+                    if isempty(findall(x->x==seq,markedpoints))#If the branch point has not been found already,
+                        push!(markedpoints,seq)                #add it to the list of marked points.
+                        results = cat(results,1,dims=(1,2,3))  #We then must extend the results matrix to accomodate the new marked point
+                        index = lastindex(markedpoints) 
+                        runagain = true       
+                    else
+                        index = findall(x->x==seq,markedpoints)[1]
+                    end
+                elseif type == "flat"
+                    index = triple[seq][1]
+                end
+
+                results[triple[1][1],triple[2][1],triple[3][1]] = index
+            end
+        end
+    end
+
+    #We've now found all the marked points of the tree, so d is the number of vertices
+    d = length(markedpoints)
+
+    M = fill([0],(d,d))
+
+    for (ii,jj) in subsets(collect(1:d),2)
+        middles = Int[]
+        for kk in 1:d
+            if kk != ii && kk != jj 
+                triple = sort([ii,jj,kk])
+                push!(middles,results[triple[1],triple[2],triple[3]])
+            end
+        end
+        M[ii,jj] = middles
+    end
+
+    A = zeros(Int64,(d,d))
+
+    for (ii,jj) in subsets(collect(1:d),2)
+        pointsbetween = 0
+        for mid in M[ii,jj]
+            if mid != ii && mid !=jj
+                pointsbetween += 1
+            end
+        end
+        if pointsbetween == 0
+            A[ii,jj] = 1
+            A[jj,ii] = 1
+        end
+    end
+
+    #We now calculate the vector describing the dynamics of the tree.
+    #The nth entry of the vector hold the index of the image of the nth sequence under the shift map
+    F = Int[]
+    for seq in markedpoints
+        append!(F,findall(x->x==shift(seq),markedpoints)[1])
+    end
+
+    return A, F, markedpoints
+                    
+end
+
 function hubbardtree(seq::Sequence)
     orbit = criticalorbit(seq)
     n = length(orbit)
@@ -99,6 +179,17 @@ function hubbardtree(internaladdress::Vector{Int})
     seq = copy(K.items)
     seq[end] = '*'
     return hubbardtree(Sequence(seq,0))
+end
+
+function betahubbardtree(angle::Rational)
+    return betahubbardtree(kneadingsequence(angle))
+end
+
+function betahubbardtree(internaladdress::Vector{Int})
+    K = kneadingsequence(internaladdress)
+    seq = copy(K.items)
+    seq[end] = '*'
+    return betahubbardtree(Sequence(seq,0))
 end
 
 
@@ -203,7 +294,7 @@ function S(angle::Rational)
 end
 
 function V(K::Sequence)
-    orb = S(K)
+    orb = criticalorbit(K)
     branchpoints = Sequence[]
     for (s,t,u) in subsets(orb,3)
         type,seq = iteratetriod(K,(s,t,u))
@@ -216,5 +307,24 @@ end
 
 function V(angle::Rational)
     return V(kneadingsequence(angle))
+end
+
+function boundary(markedpoints)
+    beta = Sequence(['B'],0)
+    mbeta = Sequence(['A','B'],1)
+
+    B = Int[]
+
+    for (ii,point) in enumerate(markedpoints)
+        type,seq = iteratetriod(markedpoints[1],(beta,mbeta,point))
+
+        if type == "flat"
+            if seq == 3
+                push!(B,ii)
+            end
+        end
+    end
+
+    return B
 end
 
