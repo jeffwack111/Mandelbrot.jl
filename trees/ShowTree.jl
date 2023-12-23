@@ -216,5 +216,14 @@ function orientedtree((A, F,markedpoints),numerators)
 
 end
 
+function orientedtree(intadd::Vector{Int})
+    H = hubbardtree(intadd)
+    n = length(characteristicpoints(H))
+
+    numerators = fill(1,n)
+
+    return orientedtree(H,numerators)
+end
+
 
     

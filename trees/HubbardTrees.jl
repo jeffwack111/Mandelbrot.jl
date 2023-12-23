@@ -409,19 +409,23 @@ function embedtree((A, F,markedpoints),numerators)
 
                     E[point] = preimorder
 
-                    #now cyclicly permute this order so the arm towards zero is last
-                    SECONDGLARM = globalarms(E,point)
-    
-                    y = findthe(z,SECONDGLARM)
-                    circshift!(preimorder,-y)
-
-                    E[point] = preimorder
-
                 end
             end
             activenodes = newactivenodes
         end
        
+
+    end
+
+    #now cyclicly permute this order so the arm towards zero is last
+    for (point,arms) in enumerate(E)
+
+        if point !==z && length(arms) > 1
+            SECONDGLARM = globalarms(E,point)
+
+            y = findthe(z,SECONDGLARM)
+            circshift!(E[point],-y)
+        end
 
     end
 
@@ -508,4 +512,45 @@ end
 
 function characteristicpoints(intadd::Vector{Int})
     return characteristicpoints(hubbardtree(intadd))
+end
+
+function binary((A,F,markedpoints),numerators)
+    E = embedtree((A,F,markedpoints),numerators)
+    digits = Char[]   
+
+    z = findall(x->x==1,F)[1]
+    beta = z +1
+    mibeta = z + 2
+
+    for ii in 1:z
+        x = markedpoints[ii].items[1]
+        if x == '*'
+            push!(digits,'1')
+        elseif x == 'A'
+            parent = E[ii][end]
+            PARMS = globalarms(E,parent)
+            b = findthe(mibeta,PARMS)
+            point = findthe(ii,PARMS)
+            if point <= b
+                push!(digits,'0')
+            else
+                push!(digits,'1')
+            end
+        elseif x == 'B'
+            parent = E[ii][end]
+            PARMS = globalarms(E,parent)
+            b = findthe(beta,PARMS)
+            point = findthe(ii,PARMS)
+            if point <= b
+                push!(digits,'1')
+            else
+                push!(digits,'0')
+            end
+        else
+            error("$x is in a kneading sequence!")
+        end
+
+    end
+
+    return Sequence(digits,0)
 end

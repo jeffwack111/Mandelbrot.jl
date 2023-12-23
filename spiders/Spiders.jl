@@ -166,3 +166,14 @@ function spidermap(S::SpiderInfo, Legs::Vector{Vector{ComplexF64}})
     return newLegs
 end
         
+function spideriterate(angle::Rational,frames::Int)
+    info = SpiderInfo(angle)
+
+    list = [standardlegs(angle)]
+
+    for i in 1:frames-1
+        SL = list[end]
+        push!(list,spidermap(info,SL))
+    end
+    return list[end][2][end]/2
+end

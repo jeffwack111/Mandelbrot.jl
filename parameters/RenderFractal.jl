@@ -1,4 +1,4 @@
-using CairoMakie
+#using CairoMakie
 using Images
 using ColorSchemes 
 
@@ -7,13 +7,22 @@ struct EscapeTimeProblem
     f::Function
     stop::Function
     maxiter::Int
-end
+end 
 
 function problem_array(patch::Matrix,f::Function,s::Function,maxiter::Int)
 
     PA = Array{EscapeTimeProblem}(undef,size(patch)...)
     for i in eachindex(patch)
         PA[i] = EscapeTimeProblem(patch[i],f,s,maxiter)
+    end
+    return PA
+end
+
+function mproblem_array(patch::Matrix,s::Function,maxiter::Int)
+
+    PA = Array{EscapeTimeProblem}(undef,size(patch)...)
+    for i in eachindex(patch)
+        PA[i] = EscapeTimeProblem(patch[i],z->z*z+patch[i],s,maxiter)
     end
     return PA
 end
@@ -29,7 +38,7 @@ function escape_time(prob::EscapeTimeProblem,colors::Vector{RGB{Float64}})
             z = prob.f(z)
         end
     end
-    return colors[mod1(iter,256)]
+    return colors[mod1(prob.maxiter - 1,256)]
 end
 
 
