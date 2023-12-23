@@ -2,9 +2,11 @@
 #Existence of quadratic Hubbard trees
 #Henk Bruin, Alexandra Kafll, Dierk Schleicher
 
+using Graphs
+
 include("../sequences/AngleDoubling.jl") 
 
-function betahubbardtree(seq::Sequence)
+function hubbardtree(seq::Sequence)
     orbit = criticalorbit(seq)
 
     #We begin with the critical orbit
@@ -84,6 +86,20 @@ function betahubbardtree(seq::Sequence)
                     
 end
 
+function hubbardtree(angle::Rational)
+    return hubbardtree(kneadingsequence(angle))
+end
+
+function hubbardtree(internaladdress::Vector{Int})
+    K = kneadingsequence(internaladdress)
+    seq = copy(K.items)
+    seq[end] = '*'
+    return hubbardtree(Sequence(seq,0))
+end
+
+
+
+#=
 function hubbardtree(seq::Sequence)
     orbit = criticalorbit(seq)
     n = length(orbit)
@@ -180,18 +196,7 @@ function hubbardtree(internaladdress::Vector{Int})
     seq[end] = '*'
     return hubbardtree(Sequence(seq,0))
 end
-
-function betahubbardtree(angle::Rational)
-    return betahubbardtree(kneadingsequence(angle))
-end
-
-function betahubbardtree(internaladdress::Vector{Int})
-    K = kneadingsequence(internaladdress)
-    seq = copy(K.items)
-    seq[end] = '*'
-    return betahubbardtree(Sequence(seq,0))
-end
-
+=#
 
 function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
     triodList = []
@@ -328,3 +333,179 @@ function boundary(markedpoints)
     return B
 end
 
+function embedtree((A, F,markedpoints),numerators)
+
+    G = SimpleGraph(A)
+    E = G.fadjlist
+
+    #=
+    J = zeros(Int64,(n,n))
+    for (ii,image) in enumerate(F)
+        J[ii,image] = 1
+    end
+    D = SimpleDiGraph(J)
+    =#
+
+    #First we want to use the numerators 
+    #to assign cyclic order to characteristic points
+    C = characteristicpoints((A,F,markedpoints))
+    
+    if length(C) != length(numerators)
+        error("mismatch between #(numerators) and #(characteristicpoints)")
+    end
+
+    
+    z = findall(x->x==1,F)[1]
+
+    #we will first try to provide the all 1s embedding
+    for (jj,chpoint) in enumerate(C)
+        
+        GLARM = globalarms(E, chpoint)
+
+        d = length(E[chpoint])
+        order = zeros(Int64,d)
+
+        #what is the period of this critical point?
+        k = period(markedpoints[chpoint])
+
+        #which is the arm towards the critical point?
+        for t in 1:d
+            for arm in GLARM
+                if (1+(t-1)*k) in arm
+                    order[mod1(numerators[jj]*t,d)] = arm[2]
+                end
+            end
+        end
+
+        E[chpoint] = order  
+        
+        
+        #now we have to go through all the preimages of this characteristic point
+
+        activenodes = [chpoint]
+        while !isempty(activenodes)
+            newactivenodes = []
+            for node in activenodes
+                GLARM = globalarms(E, node) 
+
+                preimages = filter!(x->x!==chpoint,findall(x->x==node,F)) #the characteristic point is the only one which has a danger of going twice
+                append!(newactivenodes,preimages)
+
+                for point in preimages
+                    preimorder = Int[]
+                    tuplelist = []
+
+
+                    localarms = E[point]
+                    for vertex in localarms
+                        target = F[vertex]
+                        x = findthe(target,GLARM)
+                        push!(tuplelist,(x,vertex))
+                    end
+
+                    #sort according to first element of the tuple, the preimage order
+                    sort!(tuplelist)
+                    preimorder = [tuple[2] for tuple in tuplelist]
+
+                    E[point] = preimorder
+
+                    #now cyclicly permute this order so the arm towards zero is last
+                    SECONDGLARM = globalarms(E,point)
+    
+                    y = findthe(z,SECONDGLARM)
+                    circshift!(preimorder,-y)
+
+                    E[point] = preimorder
+
+                end
+            end
+            activenodes = newactivenodes
+        end
+       
+
+    end
+
+
+    return E
+end
+
+function findthe(item,listoflists)
+
+    instances = [findall(x->x==item,list) for list in listoflists]
+
+    hits = findall(x->!isempty(x),instances)
+
+    if isempty(hits)
+        error("no $item found")
+    elseif length(hits) !== 1
+        error("item $item found in multiple lists")
+    end
+
+    if length(instances[hits[1]]) == 1 
+        return hits[1]        
+    else
+        v = hits[1]
+        error("$item found more than once in list $v")
+    end
+end
+
+function globalarms(E,point)
+    neighbors = E[point]
+    GA = [[point,n] for n in neighbors]
+    for arm in GA
+        activenodes = [arm[2]]
+        while !isempty(activenodes)
+            newactivenodes = []
+            for node in activenodes
+                append!(newactivenodes,filter(x->!(x in arm),E[node]))
+            end
+            append!(arm,newactivenodes)
+            activenodes = newactivenodes
+        end
+    end
+    return GA
+end
+
+function adjlist(A)
+    return SimpleGraph(A).fadjlist
+end
+
+function branchpoints(E)
+    Bindices = Int[]
+    B = Vector{Int}[]
+    for (ii,neighbors) in enumerate(E)
+        if length(neighbors) > 2
+            push!(B,neighbors)
+            push!(Bindices)
+        end
+    end
+    return B, Bindices
+end
+
+function characteristicpoints((A,F,markedpoints))
+    one = markedpoints[1]
+    zero = markedpoints[findall(x->x==1,F)[1]]
+
+    P = Int[]
+
+    for (ii,point) in enumerate(markedpoints)
+        type,seq = iteratetriod(markedpoints[1],(one,zero,point))
+
+        if type == "flat"
+            if seq == 3 && sum(A[ii,:]) > 2 && point.preperiod == 0
+                push!(P,ii)
+            end
+        end
+    end
+
+    #we will hope for now that this is indeed the list of characteristic points
+    return P
+end
+
+function characteristicpoints(theta::Rational)
+    return characteristicpoints(hubbardtree(theta))
+end
+
+function characteristicpoints(intadd::Vector{Int})
+    return characteristicpoints(hubbardtree(intadd))
+end

@@ -199,3 +199,7 @@ function periodiclamination(alpha::Rational)
 
     #The four images of the endpoints of m can be joined in pairs in exactly one way by leaves of length at least 1/3
 end
+
+function leaflength(theta::Rational)
+    return abs(theta - conjugate(theta))
+end

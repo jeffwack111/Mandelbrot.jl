@@ -73,6 +73,10 @@ function angleof(binary::Sequence)
     return theta
 end
 
+function angleof(digs::String)
+    return angleof(Sequence(collect(digs),0))
+end
+
 
 function rho(kneadingsequence::Sequence,n::Int)
     if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0
