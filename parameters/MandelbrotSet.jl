@@ -33,26 +33,24 @@ function showmandelbrot(A::Complex, B::Complex, scale::Real)
     return pic
 end
 
-function showm(intadd::Vector{Int})
+function showm(intadd::Vector{Int},numerators)
     head = push!(copy(intadd),2*intadd[end])
-    print(head)
     H1 = hubbardtree(intadd)
     H2 = hubbardtree(head)
     n = length(characteristicpoints(H1))
-    numerators = fill(1,n)
 
     theta1 = angleof(binary(H1,numerators))
     theta2 = angleof(binary(H2,numerators))
     println(theta1)
     println(theta2)
 
-    c1 = spideriterate(theta1,100)
-    c2 = spideriterate(theta2,100)
+    c1 = spideriterate(theta1,500)
+    c2 = spideriterate(theta2,500)
     println(c1)
     println(c2)
 
-    M = mandelbrot_patch(c1,c2,4)
-    PA = mproblem_array(M,escape(2),100)
+    M = mandelbrot_patch(c1,c2,2)
+    PA = mproblem_array(M,escape(4),100)
     C = colorschemes[:glasbey_bw_minc_20_hue_150_280_n256].colors
     colors = fill(C,size(PA))
     return escape_time.(PA,colors)

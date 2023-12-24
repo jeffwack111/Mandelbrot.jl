@@ -11,8 +11,11 @@ function hubbardtree(seq::Sequence)
 
     #We begin with the critical orbit
     markedpoints = copy(orbit)
+
     push!(markedpoints,Sequence(['B'],0))
     push!(markedpoints,Sequence(['A','B'],1))
+    push!(markedpoints,Sequence(['B','A'],1))
+    push!(markedpoints,Sequence(['A'],0))
 
     n = length(markedpoints)
 
@@ -519,19 +522,33 @@ function binary((A,F,markedpoints),numerators)
     digits = Char[]   
 
     z = findall(x->x==1,F)[1]
-    beta = z +1
+    
+    beta = z + 1
     mibeta = z + 2
+    pa = z + 3
+
+    dinger = 1
 
     for ii in 1:z
         x = markedpoints[ii].items[1]
         if x == '*'
-            push!(digits,'1')
+            if dinger == 1
+                push!(digits,'1')
+            else
+                push!(digits,'0')
+            end
         elseif x == 'A'
             parent = E[ii][end]
             PARMS = globalarms(E,parent)
             b = findthe(mibeta,PARMS)
             point = findthe(ii,PARMS)
-            if point <= b
+            if point == b
+                if dinger == 1
+                    push!(digits,'0')
+                else
+                    push!(digits,'1')
+                end
+            elseif point < b
                 push!(digits,'0')
             else
                 push!(digits,'1')
@@ -541,7 +558,13 @@ function binary((A,F,markedpoints),numerators)
             PARMS = globalarms(E,parent)
             b = findthe(beta,PARMS)
             point = findthe(ii,PARMS)
-            if point <= b
+            if point == b
+                if dinger == 1
+                    push!(digits,'1')
+                else
+                    push!(digits,'0')
+                end
+            elseif point < b
                 push!(digits,'1')
             else
                 push!(digits,'0')
@@ -550,7 +573,21 @@ function binary((A,F,markedpoints),numerators)
             error("$x is in a kneading sequence!")
         end
 
+        (type,seq) = iteratetriod(markedpoints[1],(markedpoints[ii],markedpoints[z],markedpoints[pa]))
+
+        if type == "flat" && seq == 1 && ii != z 
+            dinger = dinger*-1
+            #print("$ii dinged")
+        end
+
     end
 
     return Sequence(digits,0)
+end
+
+function test(intadd::Vector{Int})
+    H = hubbardtree(intadd)
+    n = length(characteristicpoints(H))
+    num = fill(1,n)
+    return internaladdress(angleof(binary(H,num)))
 end
