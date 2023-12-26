@@ -38,35 +38,9 @@ function mproblem_array(patch::Matrix,s::Function,maxiter::Int)
     return PA
 end
 
-#We can unify the following two funcitons
-
-
-
-function binarycolor(prob::EscapeTimeProblem, color::Function)
-    z = prob.z0
-    #=
-    This function acts as a stop condition
-    "You shall stop."
-    =#
-    for iter in 1:prob.maxiter
-        if prob.stop(z) == true
-            return color(z)
-        else
-            z = prob.f(z)
-        end
-    end
-    #=
-    As well as a function which takes a point satisfying the stop condition and gives it a color,
-    "Hi, thanks for coming, here's a color"
-    =#
-    return RGB{Float64}(0.7,0.2,0.8)
-
-end
-
 function normalize_escape_time!(patch::Matrix)
     patch = patch .- patch[1,1]
 end
-
 
 function blackwhite(alpha::Real)
 
@@ -95,10 +69,6 @@ function escape(Radius::Real)
 
     return escaped
 end
-
-
-
-
 
 
 function julia_patch(center::Complex, right_center::Complex)
