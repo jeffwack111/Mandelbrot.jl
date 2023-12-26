@@ -18,7 +18,7 @@ function mandelbrot_patch(A::Complex, B::Complex, scale::Real)
     horizontal_axis = LinRange(-to_side,to_side,1000)
     vertical_axis = LinRange(-to_top,to_top,1000)
 
-    origin_patch = transpose(horizontal_axis) .+ vertical_axis
+    origin_patch = transpose(vertical_axis) .+ horizontal_axis
     #we want a matrix whose i,jth element is H[i] + V[j]
 
     return origin_patch .+ center
@@ -27,17 +27,14 @@ end
 function showmandelbrot(A::Complex, B::Complex, scale::Real)
     M = mandelbrot_patch(A,B,scale)
     PA = mproblem_array(M,escape(4),100)
-    C = colorschemes[:glasbey_bw_minc_20_hue_150_280_n256].colors
-    colors = fill(C,size(PA))
-    pic = escape_time.(PA,colors)
-    return pic
+    pic = escapetime(PA)
+    return heatmap(pic)
 end
 
 function showm(intadd::Vector{Int},numerators)
     head = push!(copy(intadd),2*intadd[end])
     H1 = hubbardtree(intadd)
     H2 = hubbardtree(head)
-    n = length(characteristicpoints(H1))
 
     theta1 = angleof(binary(H1,numerators))
     theta2 = angleof(binary(H2,numerators))
@@ -49,10 +46,8 @@ function showm(intadd::Vector{Int},numerators)
     println(c1)
     println(c2)
 
-    M = mandelbrot_patch(c1,c2,2)
+    M = mandelbrot_patch(c1,c2,1)
     PA = mproblem_array(M,escape(4),100)
-    C = colorschemes[:glasbey_bw_minc_20_hue_150_280_n256].colors
-    colors = fill(C,size(PA))
-    return escape_time.(PA,colors)
+    return heatmap(escapetime.(PA))
 
 end

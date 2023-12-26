@@ -1,6 +1,4 @@
 using IterTools
-using CairoMakie
-using ColorSchemes
 include("SpiderFuncs.jl")
 include("../sequences/AngleDoubling.jl")
 

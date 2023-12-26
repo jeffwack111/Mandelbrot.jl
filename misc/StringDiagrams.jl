@@ -1,5 +1,5 @@
 using CairoMakie
-include("AngleDoubling.jl")
+include("..//sequences//AngleDoubling.jl")
 
 denominator_list = [19, 29, 37, 53, 59, 61, 67, 83, 101, 107, 131, 139, 149, 163, 173, 179, 181, 197, 211, 227, 269, 293, 317, 347, 349, 373]
 

@@ -1,6 +1,5 @@
-#using CairoMakie
-using Images
-using ColorSchemes 
+using CairoMakie
+#using ColorSchemes 
 
 struct EscapeTimeProblem
     z0::Number
@@ -9,8 +8,20 @@ struct EscapeTimeProblem
     maxiter::Int
 end 
 
-function problem_array(patch::Matrix,f::Function,s::Function,maxiter::Int)
+function escapetime(prob::EscapeTimeProblem)
+    z = prob.z0
+    for iter in 1:prob.maxiter
+        if prob.stop(z) == true
+            return iter
+        else
+            z = prob.f(z)
+        end
+    end
+    return prob.maxiter
+end
 
+
+function jproblem_array(patch::Matrix,f::Function,s::Function,maxiter::Int)
     PA = Array{EscapeTimeProblem}(undef,size(patch)...)
     for i in eachindex(patch)
         PA[i] = EscapeTimeProblem(patch[i],f,s,maxiter)
@@ -29,17 +40,6 @@ end
 
 #We can unify the following two funcitons
 
-function escape_time(prob::EscapeTimeProblem,colors::Vector{RGB{Float64}})
-    z = prob.z0
-    for iter in 1:prob.maxiter
-        if prob.stop(z) == true
-            return colors[mod1(iter - 1,256)]
-        else
-            z = prob.f(z)
-        end
-    end
-    return colors[mod1(prob.maxiter - 1,256)]
-end
 
 
 function binarycolor(prob::EscapeTimeProblem, color::Function)
@@ -67,24 +67,15 @@ function normalize_escape_time!(patch::Matrix)
     patch = patch .- patch[1,1]
 end
 
-function apply_color(patch::Matrix,colors::Vector{RGB{Float64}})
-    pic = zeros(RGB{Float64},size(patch))
-    for i in eachindex(patch)
-        pic[i] = colors[patch[i]+1]
-    end
-    return pic
-end
-
-
 
 function blackwhite(alpha::Real)
 
     function color(z::Complex)
         turns = angle(z)/(2*pi) + 0.5
         if  turns >= alpha/2 && turns <alpha/2+0.5
-            return RGB{Float64}(1,1,1)
+            return 1
         else
-            return RGB{Float64}(0,0,0)
+            return 0
         end
     end
 
@@ -121,8 +112,7 @@ function julia_patch(center::Complex, right_center::Complex)
     horizontal_axis = LinRange(-right_center,right_center,1000)
     vertical_axis = LinRange(-top_center,top_center,1000)
 
-    origin_patch = transpose(horizontal_axis) .+ vertical_axis
-    #we want a matrix whose i,jth element is H[i] + V[j]
+    origin_patch = transpose(vertical_axis) .+ horizontal_axis
 
     return origin_patch .+ center
 end
