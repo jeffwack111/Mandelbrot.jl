@@ -27,18 +27,23 @@ function plot_leaf!(leaf::Leaf,color)
     a = leaf.a
     b = leaf.b
     θ = (a+b)/2
-    if abs2(a-b) != 0.25
+    if abs2(a-b) < 0.25
         δ = (b-a)/2
         r = sec(2*π*δ)
         center = r*exp(2*π*1im*θ)
         radius = abs(exp(2*π*1im*a)-center)
-        arc!(Point2f(real(center),imag(center)),radius,-π,π, color = color)
-        #arc!(Point2f(real(center),imag(center)),radius,2*π*(θ + 0.25 + δ),2*π*(θ + 0.75 - δ))
+        #arc!(Point2f(real(center),imag(center)),radius,-π,π, color = color)
+        arc!(Point2f(real(center),imag(center)),radius,2*π*(θ + 0.25 + δ),2*π*(θ + 0.75 - δ))
+    elseif abs2(a-b) > 0.25
+        δ = (a-b)/2
+        r = sec(2*π*δ)
+        center = r*exp(2*π*1im*θ)
+        radius = abs(exp(2*π*1im*a)-center)
+        arc!(Point2f(real(center),imag(center)),radius,2*π*(θ - δ-0.25),2*π*(θ + δ+0.25))
     else
         lines!([real(exp(2*π*1im*a)),real(exp(2*π*1im*b))],[imag(exp(2*π*1im*a)),imag(exp(2*π*1im*b))],color = color)
     end
 end
-
 
 
 function image(leaf::Leaf)
@@ -197,7 +202,19 @@ function periodiclamination(alpha::Rational)
 
     m = Leaf(alpha,beta)
 
-    #The four images of the endpoints of m can be joined in pairs in exactly one way by leaves of length at least 1/3
+    orb = orbit(m)
+
+    f = Figure()
+    ax = Axis(f[1, 1],aspect = 1)
+    xlims!(ax,-2,2)
+    ylims!(ax,-2,2)
+    hidedecorations!(ax)
+    arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
+
+    for leaf in orb.items
+        plot_leaf!(leaf,"black")
+    end
+    return f
 end
 
 function leaflength(theta::Rational)
