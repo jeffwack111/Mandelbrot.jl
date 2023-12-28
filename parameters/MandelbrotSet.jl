@@ -6,7 +6,7 @@ function mandelbrot_patch(A::Complex, B::Complex, scale::Real)
     #we will first compute the patch at the correct scale and orientation, centered at the origin
     #we will then translate the patch to to correct location and return it
 
-    center = 0.5*(A + B) 
+    center = 0.5*(A + B)  
     #The center of the patch
 
     to_side = scale*(A - B) 
@@ -33,21 +33,19 @@ end
 
 function showm(intadd::Vector{Int},numerators)
     head = push!(copy(intadd),2*intadd[end])
-    H1 = hubbardtree(intadd)
-    H2 = hubbardtree(head)
 
-    theta1 = angleof(binary(H1,numerators))
-    theta2 = angleof(binary(H2,numerators))
+    @time theta1 = angleof(binary(hubbardtree(intadd),numerators))
     println(theta1)
+    @time theta2 = angleof(binary(hubbardtree(head),numerators))
     println(theta2)
 
-    c1 = spideriterate(theta1,500)
-    c2 = spideriterate(theta2,500)
+    @time c1 = spideriterate(theta1,500)
     println(c1)
+    @time c2 = spideriterate(theta2,500)
     println(c2)
 
-    M = mandelbrot_patch(c1,c2,1)
-    PA = mproblem_array(M,escape(4),100)
-    return heatmap(escapetime.(PA))
+    M = mandelbrot_patch(c1,c2,2)
+    PA = mproblem_array(M,escape(4),500)
+    return @time heatmap(escapetime.(PA))
 
 end

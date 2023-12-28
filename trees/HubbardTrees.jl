@@ -2,8 +2,6 @@
 #Existence of quadratic Hubbard trees
 #Henk Bruin, Alexandra Kafll, Dierk Schleicher
 
-using Graphs
-
 include("../sequences/AngleDoubling.jl") 
 
 function hubbardtree(seq::Sequence)
@@ -63,7 +61,7 @@ function hubbardtree(seq::Sequence)
         M[ii,jj] = middles
     end
 
-    A = zeros(Int64,(d,d))
+    E = [Set{Int}() for ii in 1:d]
 
     for (ii,jj) in subsets(collect(1:d),2)
         pointsbetween = 0
@@ -73,8 +71,8 @@ function hubbardtree(seq::Sequence)
             end
         end
         if pointsbetween == 0
-            A[ii,jj] = 1
-            A[jj,ii] = 1
+            push!(E[ii],jj)
+            push!(E[jj],ii)
         end
     end
 
@@ -85,7 +83,7 @@ function hubbardtree(seq::Sequence)
         append!(F,findall(x->x==shift(seq),markedpoints)[1])
     end
 
-    return A, F, markedpoints
+    return E, F, markedpoints
                     
 end
 
@@ -99,107 +97,6 @@ function hubbardtree(internaladdress::Vector{Int})
     seq[end] = '*'
     return hubbardtree(Sequence(seq,0))
 end
-
-
-
-#=
-function hubbardtree(seq::Sequence)
-    orbit = criticalorbit(seq)
-    n = length(orbit)
-
-    results = fill(0,(n,n,n))
-
-    #We begin with the critical orbit
-    markedpoints = copy(orbit)
-
-    #All triples of points on the critical orbit are run through the triod map
-    for triple in subsets(collect(enumerate(orbit)),3)
-        type,seq = iteratetriod(orbit[1],(triple[1][2],triple[2][2],triple[3][2]))
-
-        if type == "branched"
-            if isempty(findall(x->x==seq,markedpoints))#If the branch point has not been found already,
-                push!(markedpoints,seq)                #add it to the list of marked points.
-                results = cat(results,1,dims=(1,2,3))  #We then must extend the results matrix to accomodate the new marked point
-                index = lastindex(markedpoints)        
-            else
-                index = findall(x->x==seq,markedpoints)[1]
-            end
-        elseif type == "flat"
-            index = triple[seq][1]
-        end
-
-        results[triple[1][1],triple[2][1],triple[3][1]] = index
-
-    end
-
-    #We now run the remaining triples through the triod map
-    for triple in subsets(collect(enumerate(markedpoints)),3)
-        if results[triple[1][1],triple[2][1],triple[3][1]] == 0 #skipping the ones we've done already
-            type,seq = iteratetriod(orbit[1],(triple[1][2],triple[2][2],triple[3][2]))
-
-            if type == "branched"
-                index = findall(x->x==seq,markedpoints)[1]
-            elseif type == "flat"
-                index = triple[seq][1]
-            end
-
-            results[triple[1][1],triple[2][1],triple[3][1]] = index
-        end
-    end
-
-    #We've now found all the marked points of the tree, so d is the number of vertices
-    d = length(markedpoints)
-
-    M = fill([0],(d,d))
-
-    for (ii,jj) in subsets(collect(1:d),2)
-        middles = Int[]
-        for kk in 1:d
-            if kk != ii && kk != jj 
-                triple = sort([ii,jj,kk])
-                push!(middles,results[triple[1],triple[2],triple[3]])
-            end
-        end
-        M[ii,jj] = middles
-    end
-
-    A = zeros(Int64,(d,d))
-
-    for (ii,jj) in subsets(collect(1:d),2)
-        pointsbetween = 0
-        for mid in M[ii,jj]
-            if mid != ii && mid !=jj
-                pointsbetween += 1
-            end
-        end
-        if pointsbetween == 0
-            A[ii,jj] = 1
-            A[jj,ii] = 1
-        end
-    end
-
-    #We now calculate the vector describing the dynamics of the tree.
-    #The nth entry of the vector hold the index of the image of the nth sequence under the shift map
-    F = Int[]
-    for seq in markedpoints
-        append!(F,findall(x->x==shift(seq),markedpoints)[1])
-    end
-
-    return A, F, markedpoints
-                    
-end
-
-function hubbardtree(angle::Rational)
-    return hubbardtree(kneadingsequence(angle))
-end
-
-function hubbardtree(internaladdress::Vector{Int})
-    K = kneadingsequence(internaladdress)
-    seq = copy(K.items)
-    seq[end] = '*'
-    return hubbardtree(Sequence(seq,0))
-end
-=#
 
 function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
     triodList = []
@@ -336,31 +233,20 @@ function boundary(markedpoints)
     return B
 end
 
-function embedtree((A, F,markedpoints),numerators)
+function embedtree((E, F,markedpoints),numerators)
 
-    G = SimpleGraph(A)
-    E = G.fadjlist
-
-    #=
-    J = zeros(Int64,(n,n))
-    for (ii,image) in enumerate(F)
-        J[ii,image] = 1
-    end
-    D = SimpleDiGraph(J)
-    =#
+    R = [Int[] for ii in 1:length(E)]
 
     #First we want to use the numerators 
     #to assign cyclic order to characteristic points
-    C = characteristicpoints((A,F,markedpoints))
+    C = characteristicpoints((E,F,markedpoints))
     
     if length(C) != length(numerators)
         error("mismatch between #(numerators) and #(characteristicpoints)")
     end
-
     
     z = findall(x->x==1,F)[1]
 
-    #we will first try to provide the all 1s embedding
     for (jj,chpoint) in enumerate(C)
         
         GLARM = globalarms(E, chpoint)
@@ -380,7 +266,7 @@ function embedtree((A, F,markedpoints),numerators)
             end
         end
 
-        E[chpoint] = order  
+        R[chpoint] = order  
         
         
         #now we have to go through all the preimages of this characteristic point
@@ -410,7 +296,7 @@ function embedtree((A, F,markedpoints),numerators)
                     sort!(tuplelist)
                     preimorder = [tuple[2] for tuple in tuplelist]
 
-                    E[point] = preimorder
+                    R[point] = preimorder
 
                 end
             end
@@ -420,20 +306,24 @@ function embedtree((A, F,markedpoints),numerators)
 
     end
 
+    #We now want to add the critical orbit to R
+    for ii in 1:z+4
+        R[ii] = [x for x in E[ii]]
+    end
+
     #now cyclicly permute this order so the arm towards zero is last
-    for (point,arms) in enumerate(E)
+    for (point,arms) in enumerate(R)
 
         if point !==z && length(arms) > 1
-            SECONDGLARM = globalarms(E,point)
+            SECONDGLARM = globalarms(R,point)
 
             y = findthe(z,SECONDGLARM)
-            circshift!(E[point],-y)
+            circshift!(R[point],-y)
         end
 
     end
 
-
-    return E
+    return R
 end
 
 function findthe(item,listoflists)
@@ -473,10 +363,6 @@ function globalarms(E,point)
     return GA
 end
 
-function adjlist(A)
-    return SimpleGraph(A).fadjlist
-end
-
 function branchpoints(E)
     Bindices = Int[]
     B = Vector{Int}[]
@@ -489,7 +375,7 @@ function branchpoints(E)
     return B, Bindices
 end
 
-function characteristicpoints((A,F,markedpoints))
+function characteristicpoints((E,F,markedpoints))
     one = markedpoints[1]
     zero = markedpoints[findall(x->x==1,F)[1]]
 
@@ -499,7 +385,7 @@ function characteristicpoints((A,F,markedpoints))
         type,seq = iteratetriod(markedpoints[1],(one,zero,point))
 
         if type == "flat"
-            if seq == 3 && sum(A[ii,:]) > 2 && point.preperiod == 0
+            if seq == 3 && length(E[ii]) > 2 && point.preperiod == 0
                 push!(P,ii)
             end
         end
@@ -590,4 +476,18 @@ function test(intadd::Vector{Int})
     n = length(characteristicpoints(H))
     num = fill(1,n)
     return internaladdress(angleof(binary(H,num)))
+end
+
+function adjlist(A::Matrix)
+    n = size(A)[1]
+    E = [Set{Int}() for kk in 1:n]
+    for ii in 1:n
+        for jj in 1:n
+            if A[ii,jj] !== 0
+                push!(E[ii],jj)
+            end
+        end
+    end
+
+    return E
 end
