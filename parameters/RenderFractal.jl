@@ -1,5 +1,4 @@
 using CairoMakie
-#using ColorSchemes 
 
 struct EscapeTimeProblem
     z0::Number
@@ -12,12 +11,16 @@ function escapetime(prob::EscapeTimeProblem)
     z = prob.z0
     for iter in 1:prob.maxiter
         if prob.stop(z) == true
-            return iter
+            if imag(z) > 0
+                return iter
+            else
+                return -iter
+            end
         else
             z = prob.f(z)
         end
     end
-    return prob.maxiter
+    return NaN
 end
 
 

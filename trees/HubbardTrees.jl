@@ -235,7 +235,7 @@ end
 
 function embedtree((E, F,markedpoints),numerators)
 
-    R = [Int[] for ii in 1:length(E)]
+    R = [collect(x) for x in E]
 
     #First we want to use the numerators 
     #to assign cyclic order to characteristic points
@@ -275,7 +275,7 @@ function embedtree((E, F,markedpoints),numerators)
         while !isempty(activenodes)
             newactivenodes = []
             for node in activenodes
-                GLARM = globalarms(E, node) 
+                GLARM = globalarms(R, node) 
 
                 preimages = filter!(x->x!==chpoint,findall(x->x==node,F)) #the characteristic point is the only one which has a danger of going twice
                 append!(newactivenodes,preimages)
@@ -375,26 +375,70 @@ function branchpoints(E)
     return B, Bindices
 end
 
+function arbembed((E,F,markedpoints))
+    R = [collect(x) for x in E]
+    z = findall(x->x==1,F)[1]
+    for (point,arms) in enumerate(R)
+
+        if point !==z && length(arms) > 1
+            SECONDGLARM = globalarms(R,point)
+
+            y = findthe(z,SECONDGLARM)
+            circshift!(R[point],-y)
+        end
+    end
+    return R
+end
+
+
 function characteristicpoints((E,F,markedpoints))
-    one = markedpoints[1]
-    zero = markedpoints[findall(x->x==1,F)[1]]
 
     P = Int[]
 
-    for (ii,point) in enumerate(markedpoints)
-        type,seq = iteratetriod(markedpoints[1],(one,zero,point))
-
-        if type == "flat"
-            if seq == 3 && length(E[ii]) > 2 && point.preperiod == 0
-                push!(P,ii)
-            end
+    for orbit in components(F)
+        c = characteristic(collect(orbit),(E,F,markedpoints))
+        if !isnothing(c)
+            push!(P,c)
         end
     end
 
-    #we will hope for now that this is indeed the list of characteristic points
     return P
 end
 
+function characteristic(orbit,(E,F,markedpoints))
+    z = findall(x->x==1,F)[1]
+
+    beta = z + 1
+    mibeta = z + 2
+    pa = z + 3
+    a = z + 4
+    if (1 in orbit)
+        return 
+    elseif (beta in orbit) 
+        return 
+    elseif (a in orbit)
+        return 
+    else
+        R = arbembed((E,F,markedpoints))
+        #then there is a characteristic point in this orbit
+        periodicpoints = filter(x->markedpoints[x].preperiod == 0,orbit)
+        for p in periodicpoints
+            GLARM = globalarms(R,p)
+            #All the other points on this orbit and zero are in one arm, and the critical point is in another
+            #4.1 page 34 TreesBook
+            targets = filter(x->x!==p,orbit)
+            push!(targets,z)
+
+            arms = [findthe(point,GLARM) for point in targets]
+
+            if allequal(arms)
+                if findthe(1,GLARM) !== arms[1]
+                    return p
+                end
+            end
+        end
+    end
+end
 function characteristicpoints(theta::Rational)
     return characteristicpoints(hubbardtree(theta))
 end
@@ -403,15 +447,17 @@ function characteristicpoints(intadd::Vector{Int})
     return characteristicpoints(hubbardtree(intadd))
 end
 
-function binary((A,F,markedpoints),numerators)
-    E = embedtree((A,F,markedpoints),numerators)
+function binary((E,F,markedpoints),numerators)
+    R = embedtree((E,F,markedpoints),numerators)
     digits = Char[]   
 
     z = findall(x->x==1,F)[1]
+    pz = findall(x->x==z,F)[1]
     
     beta = z + 1
     mibeta = z + 2
     pa = z + 3
+    a = z + 4
 
     dinger = 1
 
@@ -419,13 +465,13 @@ function binary((A,F,markedpoints),numerators)
         x = markedpoints[ii].items[1]
         if x == '*'
             if dinger == 1
-                push!(digits,'1')
-            else
                 push!(digits,'0')
+            else
+                push!(digits,'1')
             end
         elseif x == 'A'
-            parent = E[ii][end]
-            PARMS = globalarms(E,parent)
+            parent = R[ii][end]
+            PARMS = globalarms(R,parent)
             b = findthe(mibeta,PARMS)
             point = findthe(ii,PARMS)
             if point == b
@@ -440,8 +486,8 @@ function binary((A,F,markedpoints),numerators)
                 push!(digits,'1')
             end
         elseif x == 'B'
-            parent = E[ii][end]
-            PARMS = globalarms(E,parent)
+            parent = R[ii][end]
+            PARMS = globalarms(R,parent)
             b = findthe(beta,PARMS)
             point = findthe(ii,PARMS)
             if point == b
@@ -459,11 +505,14 @@ function binary((A,F,markedpoints),numerators)
             error("$x is in a kneading sequence!")
         end
 
-        (type,seq) = iteratetriod(markedpoints[1],(markedpoints[ii],markedpoints[z],markedpoints[pa]))
-
-        if type == "flat" && seq == 1 && ii != z 
+        if markedpoints[pz].items[1] == 'A'
+            (type,seq) = iteratetriod(markedpoints[1],(markedpoints[ii],markedpoints[pz],markedpoints[pa]))
+        else
+            (type,seq) = iteratetriod(markedpoints[1],(markedpoints[ii],markedpoints[pz],markedpoints[a]))
+        end
+        if type == "flat" && seq == 1  
             dinger = dinger*-1
-            #print("$ii dinged")
+            #println("$ii dinged")
         end
 
     end
@@ -491,3 +540,32 @@ function adjlist(A::Matrix)
 
     return E
 end
+
+function components(F::Vector{Int})
+    C = Set{Int}[]
+    done = zeros(Int64,length(F))
+
+    while prod(done) == 0
+        seedindex = findfirst(x->x==0,done)
+        push!(C,Set(seedindex))
+        activenodes = [seedindex]
+        done[seedindex] = 1
+        while !isempty(activenodes)
+            newactivenodes = []
+            for node in activenodes
+                append!(newactivenodes,filter(x->!in(x,C[end]),append!(findall(x->x==node,F),F[node])))
+            end
+            for node in newactivenodes
+                push!(C[end],node)
+            end
+            for index in findall(x->x in newactivenodes,1:length(F))
+                done[index] = 1
+            end
+            activenodes = newactivenodes
+        end
+    end
+
+    return C
+end
+
+

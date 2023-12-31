@@ -1,6 +1,7 @@
 include("RenderFractal.jl")
 include("../spiders/Spiders.jl")
 include("../trees/HubbardTrees.jl")
+using ColorSchemes 
 
 function mandelbrot_patch(A::Complex, B::Complex, scale::Real)
     #we will first compute the patch at the correct scale and orientation, centered at the origin
@@ -24,11 +25,11 @@ function mandelbrot_patch(A::Complex, B::Complex, scale::Real)
     return origin_patch .+ center
 end
 
-function showmandelbrot(A::Complex, B::Complex, scale::Real)
+function showmandelbrot((A, B), scale::Real)
     M = mandelbrot_patch(A,B,scale)
-    PA = mproblem_array(M,escape(4),100)
-    pic = escapetime(PA)
-    return heatmap(pic)
+    PA = mproblem_array(M,escape(100),100)
+    pic = escapetime.(PA)
+    return heatmap(pic,nan_color = RGBAf(0,0,0,1),colormap = :PRGn_9)
 end
 
 function showm(intadd::Vector{Int},numerators)
@@ -44,8 +45,65 @@ function showm(intadd::Vector{Int},numerators)
     @time c2 = spideriterate(theta2,500)
     println(c2)
 
-    M = mandelbrot_patch(c1,c2,2)
-    PA = mproblem_array(M,escape(4),500)
-    return @time heatmap(escapetime.(PA))
+    M = mandelbrot_patch(c1,c2,10)
+    PA = mproblem_array(M,escape(100),1000)
+    return @time heatmap(mod1.(escapetime.(PA),10),nan_color = RGBAf(0,0,0,1),colormap = :PRGn_9,aspect = 1)
+end
 
+function showm(intadd::Vector{Int})
+    n = length(characteristicpoints(hubbardtree(intadd)))
+    nums = fill(1,n)
+    return showm(intadd,nums)
+end
+
+function anglepairlist(n::Int)
+    list = []
+    for ii in 1:n
+        intadd = [1,2,2*(ii+2)]
+        head = [1,2,2*(ii+2),4*(ii+2)]
+        num = [1]
+        theta1 = angleof(binary(hubbardtree(intadd),num))
+        theta2 = angleof(binary(hubbardtree(head),num))
+        push!(list,(theta1,theta2))
+    end
+    return list
+end
+
+function movie(frames::Int)
+
+    fig = Figure()
+    ax = Axis(fig[1, 1],aspect = 1)
+    hidedecorations!(ax)
+    hidespines!(ax)
+
+    record(fig,"test.gif",1:frames; framerate = 3) do ii
+        empty!(ax)
+        intadd = [1,2]
+        push!(intadd,(ii+1)*2+1)
+        theta1 = angleof(binary(hubbardtree(intadd),[1]))
+        head = copy(intadd)
+        push!(head,intadd[end]*2)
+        theta2 = angleof(binary(hubbardtree(head),[1]))
+
+        c1 = spideriterate(theta1,100+50*ii)
+        c2 = spideriterate(theta2,100+50*ii)
+
+        M = mandelbrot_patch(c1,c2,7+3*ii)
+        PA = mproblem_array(M,escape(10000),500)
+        heatmap!(mod.(escapetime.(PA),50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
+
+    end 
+end
+
+function anglepair(intadd::Vector{Int},numerators)
+    head = push!(copy(intadd),2*intadd[end])
+    theta1 = angleof(binary(hubbardtree(intadd),numerators))
+    theta2 = angleof(binary(hubbardtree(head),numerators))
+    return (theta1,theta2)
+end
+
+function parameterpair(angles)
+    c1 = spideriterate(angles[1],500)
+    c2 = spideriterate(angles[2],500)
+    return (c1,c2)
 end

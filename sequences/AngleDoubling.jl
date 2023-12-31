@@ -155,6 +155,20 @@ function admissible(kneadingsequence::Sequence,m::Int)
     end
 end
 
+#Lemma 5.4 page 43 TreesBook
+function admissible(K::Sequence)
+    for m in 1:period(K)
+        if !admissible(K,m)
+            return (false,m)
+        end
+    end
+    return true
+end
+
+function admissible(intadd::Vector{Int})
+    return admissible(kneadingsequence(intadd))
+end
+
 #TreesBook pg 145
 function denominators(S::Vector{Int})
     n = length(S) - 1

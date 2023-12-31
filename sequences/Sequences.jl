@@ -43,7 +43,7 @@ function reduce(seq::Sequence)
     k = length(repetend)
 
     if length(repetend) > 1
-        for d in Iterators.flatten((1,factor(Set,k)))
+        for d in divisors(k)
             chunks = collect.(partition(repetend,d))
             if allequal(chunks)
                 repetend = chunks[1]
@@ -66,8 +66,6 @@ function reduce(seq::Sequence)
 
 end
 
-    
-
 function goesto(S::Sequence)
     return push!(collect(2:length(S.items)),S.preperiod+1)
 end
@@ -82,10 +80,21 @@ function shift(seq::Sequence)
     end  
 end
 
+function divisors(n)
+    d = Int64[1]
+    for (p, e) in factor(n)
+        r = 1
+        l = length(d)
+        for i in 1:e
+            r *= p
+            for j in 1:l
+                push!(d, d[j]*r)
+            end
+        end
+    end
+    return sort(d)
+end
 
-
-    
-    
 
 
 
