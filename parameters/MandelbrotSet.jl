@@ -45,15 +45,30 @@ function showm(intadd::Vector{Int},numerators)
     @time c2 = spideriterate(theta2,500)
     println(c2)
 
-    M = mandelbrot_patch(c1,c2,10)
-    PA = mproblem_array(M,escape(100),1000)
-    return @time heatmap(mod1.(escapetime.(PA),10),nan_color = RGBAf(0,0,0,1),colormap = :PRGn_9,aspect = 1)
+    M = mandelbrot_patch(c1,c2,50)
+    PA = mproblem_array(M,escape(100),500)
+
+    fig = Figure()
+    scene = Scene(camera=campixel!, resolution=(1000,1000))
+    ax = Axis(scene,aspect = 1)
+    hidedecorations!(ax)
+    hidespines!(ax)
+
+    @time heatmap!(scene,mod.(escapetime.(PA),50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
+
+    return scene
 end
 
 function showm(intadd::Vector{Int})
     n = length(characteristicpoints(hubbardtree(intadd)))
     nums = fill(1,n)
     return showm(intadd,nums)
+end
+
+function movie(intaddlist::Vector{Vector{Int}})
+    for (ii,intadd) in enumerate(intaddlist)
+        save("frame$ii.png",showm(intadd))
+    end
 end
 
 function anglepairlist(n::Int)
@@ -69,32 +84,6 @@ function anglepairlist(n::Int)
     return list
 end
 
-function movie(frames::Int)
-
-    fig = Figure()
-    ax = Axis(fig[1, 1],aspect = 1)
-    hidedecorations!(ax)
-    hidespines!(ax)
-
-    record(fig,"test.gif",1:frames; framerate = 3) do ii
-        empty!(ax)
-        intadd = [1,2]
-        push!(intadd,(ii+1)*2+1)
-        theta1 = angleof(binary(hubbardtree(intadd),[1]))
-        head = copy(intadd)
-        push!(head,intadd[end]*2)
-        theta2 = angleof(binary(hubbardtree(head),[1]))
-
-        c1 = spideriterate(theta1,100+50*ii)
-        c2 = spideriterate(theta2,100+50*ii)
-
-        M = mandelbrot_patch(c1,c2,7+3*ii)
-        PA = mproblem_array(M,escape(10000),500)
-        heatmap!(mod.(escapetime.(PA),50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
-
-    end 
-end
-
 function anglepair(intadd::Vector{Int},numerators)
     head = push!(copy(intadd),2*intadd[end])
     theta1 = angleof(binary(hubbardtree(intadd),numerators))
@@ -106,4 +95,32 @@ function parameterpair(angles)
     c1 = spideriterate(angles[1],500)
     c2 = spideriterate(angles[2],500)
     return (c1,c2)
+end
+
+
+function oldmovie(frames::Int)
+
+    fig = Figure()
+    scene = Scene(camera=campixel!, resolution=(1000,1000))
+    ax = Axis(scene,aspect = 1)
+    hidedecorations!(ax)
+    hidespines!(ax)
+
+    record(scene,"test.gif",1:frames; framerate = 3) do ii
+        empty!(ax)
+        intadd = [1,2]
+        push!(intadd,(ii+1)*2+1)
+        theta1 = angleof(binary(hubbardtree(intadd),[1]))
+        head = copy(intadd)
+        push!(head,intadd[end]*2)
+        theta2 = angleof(binary(hubbardtree(head),[1]))
+
+        c1 = spideriterate(theta1,100+50*ii)
+        c2 = spideriterate(theta2,100+50*ii)
+
+        M = mandelbrot_patch(c1,c2,50)
+        PA = mproblem_array(M,escape(10000),500)
+        heatmap!(scene,mod.(escapetime.(PA),50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
+
+    end 
 end
