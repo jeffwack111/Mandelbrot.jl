@@ -17,21 +17,35 @@ P2 = EscapeTimeProblem(z1,z->z*z+c_rabbit,escape(1000),maxiter)
 T0 = forwardorbit(P1)
 T1 = forwardorbit(P2)
 
+L = min(length(T0),length(T1))
+
+T0 = T0[1:L]
+T1 = T1[1:L]
+
 fig = Figure()
-ax = Axis(fig[1,1],aspect = 1)
+ax = Axis(fig[1,1])
 R = 5
 ylims!(-R,R)
 xlims!(-R,R)
-scatter!(real.(T0),imag.(T0),marker = :circle,markersize = 10,color = 1:length(T0),colormap = [:red,:yellow])
-scatter!(real.(T1),imag.(T1), marker = :cross,markersize = 12,color = 1:length(T1),colormap = [:red,:yellow])
 
-ax = Axis(fig[2,1],yscale = log10)
+cmap = :viridis
+#cmap = [:red,:yellow]
+
+scatter!(real.(T0),imag.(T0),marker = :circle,markersize = 10,color = 1:L,colormap = cmap, label = "T0")
+scatter!(real.(T1),imag.(T1), marker = :cross,markersize = 12,color = 1:L,colormap = cmap, label = "T1")
+
+#Colorbar(fig[1,2],colormap = cmap,limits = (0,L))#,alignmode = Mixed(right = 0))
+colsize!(fig.layout, 1, Aspect(1, 1))
+
+axislegend()
+
+ax = Axis(fig[2,1],yscale = log10,ylabel = "Δ",xlabel = "iteration count")
 rowsize!(fig.layout,2,Relative(0.2))
-
 
 l = min(length(T0),length(T1))
 
 D = abs.(T0[1:l].-T1[1:l])
-plot!(D)
+plot!(D,color = 1:L,colormap = cmap)
+
 
 fig
