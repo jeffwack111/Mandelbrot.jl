@@ -11,16 +11,26 @@ function escapetime(prob::EscapeTimeProblem)
     z = prob.z0
     for iter in 1:prob.maxiter
         if prob.stop(z) == true
-            if imag(z) > 0
-                return iter
-            else
-                return -iter
-            end
+            return (iter, z)
         else
             z = prob.f(z)
         end
     end
-    return NaN
+    return (NaN,z)
+end
+
+function forwardorbit(prob::EscapeTimeProblem)
+    z = prob.z0
+    O = [z]
+    for iter in 1:prob.maxiter
+        if prob.stop(z) == true
+            return O
+        else
+            z = prob.f(z)
+            push!(O,z)
+        end
+    end
+    return O
 end
 
 
@@ -33,13 +43,20 @@ function jproblem_array(patch::Matrix,f::Function,s::Function,maxiter::Int)
 end
 
 function mproblem_array(patch::Matrix,s::Function,maxiter::Int)
-
     PA = Array{EscapeTimeProblem}(undef,size(patch)...)
     for i in eachindex(patch)
         PA[i] = EscapeTimeProblem(patch[i],z->z*z+patch[i],s,maxiter)
     end
     return PA
 end
+
+function lproblem_array(patch::Matrix,s::Function,maxiter::Int)
+    PA = Array{EscapeTimeProblem}(undef,size(patch)...)
+    for i in eachindex(patch)
+        PA[i] = EscapeTimeProblem(patch[i],z->2*patch[i]*(1+z/2)^2,s,maxiter)
+    end
+    return PA
+end  
 
 function normalize_escape_time!(patch::Matrix)
     patch = patch .- patch[1,1]

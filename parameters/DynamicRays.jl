@@ -3,22 +3,18 @@ using ColorSchemes
 include("../sequences/AngleDoubling.jl")
 include("../spiders/SpiderFuncs.jl")
 
-function dynamicrays(c::Complex,angle::Rational)
+function dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
     orb = orbit(angle)
 
     raylist = Vector{ComplexF64}[]
-    R = 100.0
-    num = 100
-    radii = collect(LinRange(R,sqrt(R),num))
+    radii = collect(LinRange(R,sqrt(R),res))
     for theta in orb.items
         push!(raylist,exp(2im*pi*theta).*radii)
     end
 
-    n = length(orb.items)
-
-    for jj in 1:100
+    for jj in 1:depth
         for (target,source) in enumerate(goesto(orb))
-            z = raylist[source][end-num+1]
+            z = raylist[source][end-res+1]
             a = sqrt(-c + z)
             b = -sqrt(-c + z)
 
@@ -26,15 +22,19 @@ function dynamicrays(c::Complex,angle::Rational)
             db = abs2(raylist[target][end]-b)
 
             if da < db
-                append!(raylist[target],path_sqrt(-c .+ raylist[source][end-num+1:end]))
+                append!(raylist[target],path_sqrt(-c .+ raylist[source][end-res+1:end]))
             elseif db < da
-                append!(raylist[target],-1 .* path_sqrt(-c .+ raylist[source][end-num+1:end]))
+                append!(raylist[target],-1 .* path_sqrt(-c .+ raylist[source][end-res+1:end]))
             else
                 return error("can't decide what to glue")
             end     
         end
     end
     return raylist
+end
+
+function landingpoint(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
+    return dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)[1][end]
 end
 
 function plotrays(rays::Vector{Vector{ComplexF64}})
@@ -55,6 +55,6 @@ function plotrays(rays::Vector{Vector{ComplexF64}})
 
 end
 
-function plotrays(c::Complex,angle::Rational)
-    return plotrays(dynamicrays(c::Complex,angle::Rational))
+function plotrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
+    return plotrays(dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int))
 end

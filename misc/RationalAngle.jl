@@ -17,7 +17,21 @@ function RationalAngle(theta::Rational)
     end
 end
 
-#this seems wrong because the below struct in a kneading sequence, not an internal address
+abstract type InternalAddress end
+
+struct FiniteInternalAddress <: InternalAddress
+    address::Vector{Int}
+end
+
+struct InfiniteInternalAddress <: InternalAddress
+    K::Sequence
+end
+
+
+
+
+
+
 #=
 struct IntAdd
     K::Sequence

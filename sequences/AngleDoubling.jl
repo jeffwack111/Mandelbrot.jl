@@ -94,7 +94,6 @@ function rhoSequence(kneadingsequence::Sequence,n::Int)
         Sequence = [n]
         while rho(kneadingsequence,Sequence[end]) !== Inf
             append!(Sequence,rho(kneadingsequence,Sequence[end]))
-            println(Sequence)
         end
         return Sequence
     else
