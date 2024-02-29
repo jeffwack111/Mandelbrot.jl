@@ -37,6 +37,17 @@ function landingpoint(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
     return dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)[1][end]
 end
 
+function plotrays!(ax,rays::Vector{Vector{ComplexF64}})
+    n = length(rays)
+
+    for (j ,ray) in enumerate(rays)
+        lines!(ax,real(ray),imag(ray),color = get(ColorSchemes.rainbow, float(j)/float(n)))
+    end
+
+    return ax
+end
+
+
 function plotrays(rays::Vector{Vector{ComplexF64}})
 
     fig = Figure()
@@ -48,7 +59,7 @@ function plotrays(rays::Vector{Vector{ComplexF64}})
     n = length(rays)
 
     for (j ,ray) in enumerate(rays)
-        lines!(real(ray),imag(ray),color = get(ColorSchemes.viridis, float(j)/float(n)))
+        lines!(ax,real(ray),imag(ray),color = get(ColorSchemes.cyclic_mygbm_30_95_c78_n256_s25, float(j)/float(n)))
     end
 
     return fig
