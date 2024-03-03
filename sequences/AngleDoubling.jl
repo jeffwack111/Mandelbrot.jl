@@ -91,11 +91,11 @@ end
 
 function rhoSequence(kneadingsequence::Sequence,n::Int) 
     if kneadingsequence.preperiod == 0
-        Sequence = [n]
-        while rho(kneadingsequence,Sequence[end]) !== Inf
-            append!(Sequence,rho(kneadingsequence,Sequence[end]))
+        seq = Int[n]
+        while rho(kneadingsequence,seq[end]) !== Inf
+            append!(seq,rho(kneadingsequence,seq[end]))
         end
-        return Sequence
+        return seq
     else
         error("cant deal with preperiodic")
     end
@@ -216,7 +216,7 @@ end
 function angledinternaladdress(theta::Rational)
     intadd = internaladdress(theta)
     denoms = denominators(intadd)
-    nums = Int[]
+    angles = Rational[]
 
     for ii in 1:length(intadd)-1
         n = 0
@@ -225,10 +225,10 @@ function angledinternaladdress(theta::Rational)
                 n += 1
             end
         end
-        push!(nums,n)
+        push!(angles,n//denoms[ii])
     end
 
-    return (intadd, nums, denoms)
+    return (intadd, angles)
 
 end
 

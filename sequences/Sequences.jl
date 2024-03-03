@@ -24,19 +24,6 @@ function period(S::Sequence)
     return length(S.items) - S.preperiod
 end
 
-function removerepetend(r::Vector,p::Vector)
-    k = length(r)
-    if length(r) > length(p) #then p certainly does not contain r
-        return p
-    else
-        if p[(end-k+1):end] == r
-            removerepetend(r,p[1:(end-k)])
-        else
-            return p
-        end
-    end
-end
-
 function reduce(seq::Sequence)
     #first check that the periodic part is prime
     repetend = seq.items[(seq.preperiod+1):end]
@@ -64,10 +51,6 @@ function reduce(seq::Sequence)
         return Sequence(repetend,0)
     end
 
-end
-
-function goesto(S::Sequence)
-    return push!(collect(2:length(S.items)),S.preperiod+1)
 end
 
 function shift(seq::Sequence)

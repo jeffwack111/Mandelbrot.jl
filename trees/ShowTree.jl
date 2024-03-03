@@ -8,7 +8,7 @@ function orientedtree((R, F,markedpoints),numerators)
     root = findall(x->x==1, F)[1]
 
     T = [[root],E[root]]
-
+ 
     nadded = 1 + length(T[2])
     n = length(E)
 

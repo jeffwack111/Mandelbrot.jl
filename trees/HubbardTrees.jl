@@ -350,7 +350,7 @@ function globalarms(E,point)
     neighbors = E[point]
     GA = [[point,n] for n in neighbors]
     for arm in GA
-        activenodes = [arm[2]]
+        activenodes = [arm[2]] 
         while !isempty(activenodes)
             newactivenodes = []
             for node in activenodes
@@ -405,7 +405,7 @@ function characteristicpoints((E,F,markedpoints))
     return P
 end
 
-function characteristic(orbit,(E,F,markedpoints))
+function characteristic(orbit,(E,F,markedpoints)) #There is a unique characteristic point for each periodic orbit
     z = findall(x->x==1,F)[1]
 
     beta = z + 1
@@ -439,6 +439,7 @@ function characteristic(orbit,(E,F,markedpoints))
         end
     end
 end
+
 function characteristicpoints(theta::Rational)
     return characteristicpoints(hubbardtree(theta))
 end
