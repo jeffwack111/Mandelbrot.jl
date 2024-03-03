@@ -60,7 +60,8 @@ function hubbardtree(seq::Sequence)
         end
         M[ii,jj] = middles
     end
-
+   
+    #E = [Set{Sequence}() for ii in 1:d]
     E = [Set{Int}() for ii in 1:d]
 
     for (ii,jj) in subsets(collect(1:d),2)
@@ -71,11 +72,18 @@ function hubbardtree(seq::Sequence)
             end
         end
         if pointsbetween == 0
+            #=
+            push!(E[ii],markedpoints[jj])
+            push!(E[jj],markedpoints[ii])
+            =#
             push!(E[ii],jj)
             push!(E[jj],ii)
         end
     end
 
+    
+
+    
     #We now calculate the vector describing the dynamics of the tree.
     #The nth entry of the vector hold the index of the image of the nth sequence under the shift map
     F = Int[]
@@ -83,7 +91,13 @@ function hubbardtree(seq::Sequence)
         append!(F,findall(x->x==shift(seq),markedpoints)[1])
     end
 
-    return E, F, markedpoints
+    return (E, F, markedpoints)
+
+    
+    #=
+    d = Dict(zip(markedpoints,E))
+    return d
+    =#
                     
 end
 
@@ -165,7 +179,7 @@ function majorityvote(S::Sequence)
     for triod in S.items
         push!(newitems,majorityvote(triod))
     end
-    return reduce(Sequence(newitems,S.preperiod))
+    return simplify(Sequence(newitems,S.preperiod))
 end
 
 function prependstar(S::Sequence)
@@ -233,9 +247,17 @@ function boundary(markedpoints)
     return B
 end
 
-function embedtree((E, F,markedpoints),numerators)
+function embedtree((IA,angles))
+    (E,F,markedpoints) = hubbardtree(IA)
 
     R = [collect(x) for x in E]
+
+    numerators = Int[]
+    for angle in angles
+        if denominator(angle) != 2
+            push!(numerators, numerator(angle))
+        end
+    end
 
     #First we want to use the numerators 
     #to assign cyclic order to characteristic points
@@ -323,7 +345,7 @@ function embedtree((E, F,markedpoints),numerators)
 
     end
 
-    return R
+    return (R,F,markedpoints)
 end
 
 function findthe(item,listoflists)

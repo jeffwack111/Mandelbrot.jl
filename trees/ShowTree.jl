@@ -2,8 +2,8 @@ using CairoMakie
 
 include("HubbardTrees.jl")
 
-function orientedtree((R, F,markedpoints),numerators)
-    E = embedtree((R,F,markedpoints),numerators)
+function orientedtree((IA,angles))
+    (E,F,markedpoints) = embedtree((IA,angles))
     
     root = findall(x->x==1, F)[1]
 
@@ -61,13 +61,8 @@ function orientedtree((R, F,markedpoints),numerators)
 
 end
 
-function orientedtree(intadd::Vector{Int})
-    H = hubbardtree(intadd)
-    n = length(characteristicpoints(H))
-
-    numerators = fill(1,n)
-
-    return orientedtree(H,numerators)
+function orientedtree(theta::Rational)  
+    return orientedtree(angledinternaladdress(theta))
 end
 
 function arbtree((E, F,markedpoints))

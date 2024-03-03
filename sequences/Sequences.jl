@@ -20,11 +20,16 @@ function Base.getindex(S::Sequence, I::UnitRange)
     return [S[ii] for ii in I]
 end
 
+function Base.hash(S::Sequence,h::UInt)
+    k = hash(S.preperiod,foldr(hash,S.items; init = UInt(0)))
+    return hash(h,hash(:Sequence,k))
+end
+
 function period(S::Sequence)
     return length(S.items) - S.preperiod
 end
 
-function reduce(seq::Sequence)
+function simplify(seq::Sequence)
     #first check that the periodic part is prime
     repetend = seq.items[(seq.preperiod+1):end]
     k = length(repetend)

@@ -45,7 +45,7 @@ function showm(intadd::Vector{Int},numerators)
     @time c2 = spideriterate(theta2,500)
     println(c2)
 
-    M = mandelbrotpatch(c1,c2,50)
+    M = mandelbrotpatch(c1,c2,3)
     PA = mproblem_array(M,escape(100),500)
 
     fig = Figure()
