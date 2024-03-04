@@ -4,6 +4,36 @@ using IterTools
 struct Sequence
     items::Vector
     preperiod::Int
+
+    #this inner constructor insures that all sequences are in reduced form
+    function Sequence(items::Vector,preperiod::Int)
+        #first check that the periodic part is prime
+        repetend = items[(preperiod+1):end]
+        k = length(repetend)
+    
+        if length(repetend) > 1
+            for d in divisors(k)
+                chunks = collect.(partition(repetend,d))
+                if allequal(chunks)
+                    repetend = chunks[1]
+                    k = length(repetend)
+                    break
+                end
+            end
+        end
+    
+        if preperiod != 0
+            preperiod = copy(items[1:preperiod])
+            while !isempty(preperiod) && repetend[end] == preperiod[end]
+                pop!(preperiod)
+                circshift!(repetend,1)
+            end
+            return new(append!(copy(preperiod),repetend),length(preperiod)) 
+        else
+            return new(repetend,0)
+        end
+    
+    end
 end
 
 import Base.==
@@ -29,35 +59,6 @@ function period(S::Sequence)
     return length(S.items) - S.preperiod
 end
 
-function simplify(seq::Sequence)
-    #first check that the periodic part is prime
-    repetend = seq.items[(seq.preperiod+1):end]
-    k = length(repetend)
-
-    if length(repetend) > 1
-        for d in divisors(k)
-            chunks = collect.(partition(repetend,d))
-            if allequal(chunks)
-                repetend = chunks[1]
-                k = length(repetend)
-                break
-            end
-        end
-    end
-
-    if seq.preperiod != 0
-        preperiod = copy(seq.items[1:seq.preperiod])
-        while !isempty(preperiod) && repetend[end] == preperiod[end]
-            pop!(preperiod)
-            circshift!(repetend,1)
-        end
-        return Sequence(append!(copy(preperiod),repetend),length(preperiod)) 
-    else
-        return Sequence(repetend,0)
-    end
-
-end
-
 function shift(seq::Sequence)
     if seq.preperiod == 0 
         #then seq is periodic
@@ -66,6 +67,19 @@ function shift(seq::Sequence)
         #then the sequence is preperiodic
         return Sequence(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
     end  
+end
+
+function orbit(seq::Sequence)
+    items = Sequence[]
+
+    while isempty(findall(x->x==seq,items))
+        push!(items,seq)
+        seq = shift(seq)
+    end
+
+    preperiod = findall(x->x==seq,items)[1] - 1
+
+    return Sequence(items,preperiod)
 end
 
 function divisors(n)

@@ -15,7 +15,7 @@ function inverseiterate(c::Complex,steps::Int)
     return preimages
 end
 
-function characteristicrays(theta::Rational)
+function characteristicrays(theta::Rational) 
 
     c = spideriterate(theta,100)
 

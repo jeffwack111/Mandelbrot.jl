@@ -4,16 +4,19 @@
 
 include("../sequences/AngleDoubling.jl") 
 
-function hubbardtree(seq::Sequence)
-    orbit = criticalorbit(seq)
+function hubbardtree(K::Sequence)
+    starK = Sequence(pushfirst!(copy(K.items),'*'),K.preperiod+1)
 
     #We begin with the critical orbit
-    markedpoints = copy(orbit)
+    markedpoints = copy(orbit(starK).items)
 
+    #These points are added for orientation purposes
+    #=
     push!(markedpoints,Sequence(['B'],0))
     push!(markedpoints,Sequence(['A','B'],1))
     push!(markedpoints,Sequence(['B','A'],1))
     push!(markedpoints,Sequence(['A'],0))
+    =#
 
     n = length(markedpoints)
 
@@ -25,7 +28,7 @@ function hubbardtree(seq::Sequence)
         #All triples of points on the critical orbit are run through the triod map
         for triple in subsets(collect(enumerate(markedpoints)),3)
             if results[triple[1][1],triple[2][1],triple[3][1]] == 0 #skipping the ones we've done already
-                type,seq = iteratetriod(orbit[1],(triple[1][2],triple[2][2],triple[3][2]))
+                type,seq = iteratetriod(K,(triple[1][2],triple[2][2],triple[3][2]))
 
                 if type == "branched"
                     if isempty(findall(x->x==seq,markedpoints))#If the branch point has not been found already,
@@ -61,8 +64,7 @@ function hubbardtree(seq::Sequence)
         M[ii,jj] = middles
     end
    
-    #E = [Set{Sequence}() for ii in 1:d]
-    E = [Set{Int}() for ii in 1:d]
+    E = [Set{Sequence}() for ii in 1:d]
 
     for (ii,jj) in subsets(collect(1:d),2)
         pointsbetween = 0
@@ -72,33 +74,15 @@ function hubbardtree(seq::Sequence)
             end
         end
         if pointsbetween == 0
-            #=
+            
             push!(E[ii],markedpoints[jj])
             push!(E[jj],markedpoints[ii])
-            =#
-            push!(E[ii],jj)
-            push!(E[jj],ii)
+
         end
     end
-
     
-
-    
-    #We now calculate the vector describing the dynamics of the tree.
-    #The nth entry of the vector hold the index of the image of the nth sequence under the shift map
-    F = Int[]
-    for seq in markedpoints
-        append!(F,findall(x->x==shift(seq),markedpoints)[1])
-    end
-
-    return (E, F, markedpoints)
-
-    
-    #=
     d = Dict(zip(markedpoints,E))
-    return d
-    =#
-                    
+    return d            
 end
 
 function hubbardtree(angle::Rational)
@@ -163,7 +147,6 @@ function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
     end
 end
 
-
 function majorityvote(arms::Tuple{Sequence,Sequence,Sequence})
     if arms[1].items[1] == arms[2].items[1] 
         return arms[1].items[1]
@@ -179,416 +162,73 @@ function majorityvote(S::Sequence)
     for triod in S.items
         push!(newitems,majorityvote(triod))
     end
-    return simplify(Sequence(newitems,S.preperiod))
+    return Sequence(newitems,S.preperiod)
 end
 
-function prependstar(S::Sequence)
-    if S.preperiod == 0
-        return Sequence(circshift!(copy(S.items),1),0)
-    else
-        return Sequence(pushfirst!(copy(S.items),'*'),S.preperiod+1)
-    end
-end
-
-#Def. page 259
-function criticalorbit(K::Sequence)
-    if K.preperiod == 0
-        A = [K]
-        for i in Iterators.drop(eachindex(K.items),1)
-            push!(A,shift(A[end]))
-        end
-        return A  
-    else
-        A = Sequence[]
-        for i in eachindex(K.items)
-            push!(A,shift(A[end]))
-        end
-        push!(A,prependstar(K))
-        return A    
-    end
-end
-
-function S(angle::Rational)
-    return S(kneadingsequence(angle))
-end
-
-function V(K::Sequence)
-    orb = criticalorbit(K)
-    branchpoints = Sequence[]
-    for (s,t,u) in subsets(orb,3)
-        type,seq = iteratetriod(K,(s,t,u))
-        if type == "branched" && isempty(findall(x->x==seq,branchpoints))
-            push!(branchpoints,seq)
-        end
-    end
-    return append!(orb,branchpoints)
-end
-
-function V(angle::Rational)
-    return V(kneadingsequence(angle))
-end
-
-function boundary(markedpoints)
-    beta = Sequence(['B'],0)
-    mbeta = Sequence(['A','B'],1)
-
-    B = Int[]
-
-    for (ii,point) in enumerate(markedpoints)
-        type,seq = iteratetriod(markedpoints[1],(beta,mbeta,point))
-
-        if type == "flat"
-            if seq == 3
-                push!(B,ii)
-            end
-        end
-    end
-
-    return B
-end
-
-function embedtree((IA,angles))
-    (E,F,markedpoints) = hubbardtree(IA)
-
-    R = [collect(x) for x in E]
-
-    numerators = Int[]
-    for angle in angles
-        if denominator(angle) != 2
-            push!(numerators, numerator(angle))
-        end
-    end
-
-    #First we want to use the numerators 
-    #to assign cyclic order to characteristic points
-    C = characteristicpoints((E,F,markedpoints))
-    
-    if length(C) != length(numerators)
-        error("mismatch between #(numerators) and #(characteristicpoints)")
-    end
-    
-    z = findall(x->x==1,F)[1]
-
-    for (jj,chpoint) in enumerate(C)
-        
-        GLARM = globalarms(E, chpoint)
-
-        d = length(E[chpoint])
-        order = zeros(Int64,d)
-
-        #what is the period of this critical point?
-        k = period(markedpoints[chpoint])
-
-        #which is the arm towards the critical point?
-        for t in 1:d
-            for arm in GLARM
-                if (1+(t-1)*k) in arm
-                    order[mod1(numerators[jj]*t,d)] = arm[2]
+#returns the connected component which includes a given node
+function component(graph::Dict,start)
+    C = Set()
+    activenodes = [start]
+    while !isempty(activenodes)
+        newactivenodes = []
+        for node in activenodes
+            for neighbor in graph[node]
+                if !(neighbor in C)
+                    push!(C,neighbor)
+                    push!(newactivenodes,neighbor)
                 end
             end
         end
-
-        R[chpoint] = order  
-        
-        
-        #now we have to go through all the preimages of this characteristic point
-
-        activenodes = [chpoint]
-        while !isempty(activenodes)
-            newactivenodes = []
-            for node in activenodes
-                GLARM = globalarms(R, node) 
-
-                preimages = filter!(x->x!==chpoint,findall(x->x==node,F)) #the characteristic point is the only one which has a danger of going twice
-                append!(newactivenodes,preimages)
-
-                for point in preimages
-                    preimorder = Int[]
-                    tuplelist = []
-
-
-                    localarms = E[point]
-                    for vertex in localarms
-                        target = F[vertex]
-                        x = findthe(target,GLARM)
-                        push!(tuplelist,(x,vertex))
-                    end
-
-                    #sort according to first element of the tuple, the preimage order
-                    sort!(tuplelist)
-                    preimorder = [tuple[2] for tuple in tuplelist]
-
-                    R[point] = preimorder
-
-                end
-            end
-            activenodes = newactivenodes
-        end
-       
-
+        activenodes = newactivenodes
     end
-
-    #We now want to add the critical orbit to R
-    for ii in 1:z+4
-        R[ii] = [x for x in E[ii]]
-    end
-
-    #now cyclicly permute this order so the arm towards zero is last
-    for (point,arms) in enumerate(R)
-
-        if point !==z && length(arms) > 1
-            SECONDGLARM = globalarms(R,point)
-
-            y = findthe(z,SECONDGLARM)
-            circshift!(R[point],-y)
-        end
-
-    end
-
-    return (R,F,markedpoints)
+    return C
 end
 
-function findthe(item,listoflists)
+function removenode(graph::Dict,node)
+    G = copy(graph)
+    neighbors = G[node]
+    G = delete!(G,node)
 
-    instances = [findall(x->x==item,list) for list in listoflists]
-
-    hits = findall(x->!isempty(x),instances)
-
-    if isempty(hits)
-        error("no $item found")
-    elseif length(hits) !== 1
-        error("item $item found in multiple lists")
+    for neighbor in neighbors
+        G[neighbor] = delete!(G[neighbor],node)
     end
 
-    if length(instances[hits[1]]) == 1 
-        return hits[1]        
-    else
-        v = hits[1]
-        error("$item found more than once in list $v")
-    end
+    return G
 end
 
-function globalarms(E,point)
-    neighbors = E[point]
-    GA = [[point,n] for n in neighbors]
-    for arm in GA
-        activenodes = [arm[2]] 
-        while !isempty(activenodes)
-            newactivenodes = []
-            for node in activenodes
-                append!(newactivenodes,filter(x->!(x in arm),E[node]))
-            end
-            append!(arm,newactivenodes)
-            activenodes = newactivenodes
-        end
-    end
-    return GA
-end
+function globalarms(graph::Dict,removed)
+    neighbors = graph[removed]
 
-function branchpoints(E)
-    Bindices = Int[]
-    B = Vector{Int}[]
-    for (ii,neighbors) in enumerate(E)
-        if length(neighbors) > 2
-            push!(B,neighbors)
-            push!(Bindices)
-        end
-    end
-    return B, Bindices
-end
+    cutgraph = removenode(graph,removed)
 
-function arbembed((E,F,markedpoints))
-    R = [collect(x) for x in E]
-    z = findall(x->x==1,F)[1]
-    for (point,arms) in enumerate(R)
+    C = []
 
-        if point !==z && length(arms) > 1
-            SECONDGLARM = globalarms(R,point)
-
-            y = findthe(z,SECONDGLARM)
-            circshift!(R[point],-y)
-        end
-    end
-    return R
-end
-
-
-function characteristicpoints((E,F,markedpoints))
-
-    P = Int[]
-
-    for orbit in components(F)
-        c = characteristic(collect(orbit),(E,F,markedpoints))
-        if !isnothing(c)
-            push!(P,c)
-        end
-    end
-
-    return P
-end
-
-function characteristic(orbit,(E,F,markedpoints)) #There is a unique characteristic point for each periodic orbit
-    z = findall(x->x==1,F)[1]
-
-    beta = z + 1
-    mibeta = z + 2
-    pa = z + 3
-    a = z + 4
-    if (1 in orbit)
-        return 
-    elseif (beta in orbit) 
-        return 
-    elseif (a in orbit)
-        return 
-    else
-        R = arbembed((E,F,markedpoints))
-        #then there is a characteristic point in this orbit
-        periodicpoints = filter(x->markedpoints[x].preperiod == 0,orbit)
-        for p in periodicpoints
-            GLARM = globalarms(R,p)
-            #All the other points on this orbit and zero are in one arm, and the critical point is in another
-            #4.1 page 34 TreesBook
-            targets = filter(x->x!==p,orbit)
-            push!(targets,z)
-
-            arms = [findthe(point,GLARM) for point in targets]
-
-            if allequal(arms)
-                if findthe(1,GLARM) !== arms[1]
-                    return p
-                end
-            end
-        end
-    end
-end
-
-function characteristicpoints(theta::Rational)
-    return characteristicpoints(hubbardtree(theta))
-end
-
-function characteristicpoints(intadd::Vector{Int})
-    return characteristicpoints(hubbardtree(intadd))
-end
-
-function binary((E,F,markedpoints),numerators)
-    R = embedtree((E,F,markedpoints),numerators)
-    digits = Char[]   
-
-    z = findall(x->x==1,F)[1]
-    pz = findall(x->x==z,F)[1]
-    
-    beta = z + 1
-    mibeta = z + 2
-    pa = z + 3
-    a = z + 4
-
-    dinger = 1
-
-    for ii in 1:z
-        x = markedpoints[ii].items[1]
-        if x == '*'
-            if dinger == 1
-                push!(digits,'0')
-            else
-                push!(digits,'1')
-            end
-        elseif x == 'A'
-            parent = R[ii][end]
-            PARMS = globalarms(R,parent)
-            b = findthe(mibeta,PARMS)
-            point = findthe(ii,PARMS)
-            if point == b
-                if dinger == 1
-                    push!(digits,'0')
-                else
-                    push!(digits,'1')
-                end
-            elseif point < b
-                push!(digits,'0')
-            else
-                push!(digits,'1')
-            end
-        elseif x == 'B'
-            parent = R[ii][end]
-            PARMS = globalarms(R,parent)
-            b = findthe(beta,PARMS)
-            point = findthe(ii,PARMS)
-            if point == b
-                if dinger == 1
-                    push!(digits,'1')
-                else
-                    push!(digits,'0')
-                end
-            elseif point < b
-                push!(digits,'1')
-            else
-                push!(digits,'0')
-            end
-        else
-            error("$x is in a kneading sequence!")
-        end
-
-        if markedpoints[pz].items[1] == 'A'
-            (type,seq) = iteratetriod(markedpoints[1],(markedpoints[ii],markedpoints[pz],markedpoints[pa]))
-        else
-            (type,seq) = iteratetriod(markedpoints[1],(markedpoints[ii],markedpoints[pz],markedpoints[a]))
-        end
-        if type == "flat" && seq == 1  
-            dinger = dinger*-1
-            #println("$ii dinged")
-        end
-
-    end
-
-    return Sequence(digits,0)
-end
-
-function test(intadd::Vector{Int})
-    H = hubbardtree(intadd)
-    n = length(characteristicpoints(H))
-    num = fill(1,n)
-    return internaladdress(angleof(binary(H,num)))
-end
-
-function adjlist(A::Matrix)
-    n = size(A)[1]
-    E = [Set{Int}() for kk in 1:n]
-    for ii in 1:n
-        for jj in 1:n
-            if A[ii,jj] !== 0
-                push!(E[ii],jj)
-            end
-        end
-    end
-
-    return E
-end
-
-function components(F::Vector{Int})
-    C = Set{Int}[]
-    done = zeros(Int64,length(F))
-
-    while prod(done) == 0
-        seedindex = findfirst(x->x==0,done)
-        push!(C,Set(seedindex))
-        activenodes = [seedindex]
-        done[seedindex] = 1
-        while !isempty(activenodes)
-            newactivenodes = []
-            for node in activenodes
-                append!(newactivenodes,filter(x->!in(x,C[end]),append!(findall(x->x==node,F),F[node])))
-            end
-            for node in newactivenodes
-                push!(C[end],node)
-            end
-            for index in findall(x->x in newactivenodes,1:length(F))
-                done[index] = 1
-            end
-            activenodes = newactivenodes
-        end
+    for neighbor in neighbors
+        push!(C,component(cutgraph,neighbor))
     end
 
     return C
+
 end
+
+function branchorbits(graph::Dict)
+    seqs = collect(keys(graph))
+    seqs = filter(x->x.preperiod==0,seqs)
+    seqs = filter(x->!('*' in x.items),seqs)
+    return Set([Set(orbit(seq).items) for seq in seqs])
+end
+
+#returns a set of points whose preimages form the entire tree. 
+#This means every cycle will have one representative,
+#and the representative from cycles of branch points will be the characteristic point.
+function characteristicset(tree::Dict)
+    orbs = branchorbits(tree)
+    C = Sequence[]
+    for orb in orbs
+        #All the other points on this orbit and zero are in one arm, and the critical point is in another
+        #4.1 page 34 TreesBook
+    end
+end
+
 
 

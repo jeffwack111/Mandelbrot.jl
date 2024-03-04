@@ -1,5 +1,40 @@
 include("Sequences.jl")
 
+struct AngledInternalAddress
+    addr::Vector{Int}
+    angles::Vector{Rational}
+end
+
+#Lemma 11.14 TreesBook page 146
+function AngledInternalAddress(theta::Rational)
+    intadd = internaladdress(theta)
+    denoms = denominators(intadd)
+    angles = Rational[]
+
+    for ii in 1:length(intadd)-1
+        n = 0
+        for jj in 1:(denoms[ii] - 1)
+            if ((2//1)^((jj-1)*intadd[ii])*theta)%1 <= theta
+                n += 1
+            end
+        end
+        push!(angles,n//denoms[ii])
+    end
+
+    return AngledInternalAddress(intadd, angles)
+
+end
+
+function firstaddress(intadd::Vector{Int})
+    d = denominators(intadd)
+    angles = [1//d for d in denominators]
+    return AngledInternalAddress(intadd,angles)
+end
+
+function nextaddress(AIA::AngledInternalAddress)
+    #give the next valid internal address, going counterclockwise
+end
+
 function orbit(angle::Rational)
     items = Rational[]
 
@@ -212,24 +247,5 @@ function period(theta::Rational)
     return period(orbit(theta))
 end
 
-#Lemma 11.14 TreesBook page 146
-function angledinternaladdress(theta::Rational)
-    intadd = internaladdress(theta)
-    denoms = denominators(intadd)
-    angles = Rational[]
-
-    for ii in 1:length(intadd)-1
-        n = 0
-        for jj in 1:(denoms[ii] - 1)
-            if ((2//1)^((jj-1)*intadd[ii])*theta)%1 <= theta
-                n += 1
-            end
-        end
-        push!(angles,n//denoms[ii])
-    end
-
-    return (intadd, angles)
-
-end
 
 
