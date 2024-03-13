@@ -3,6 +3,12 @@ using ColorSchemes
 include("../sequences/AngleDoubling.jl")
 include("../spiders/SpiderFuncs.jl")
 
+function goesto(seq::Sequence)
+    l = seq.preperiod
+    k = period(seq)
+    return append!(collect(1:l).+1,circshift(l+1:l+k,-1))
+end
+
 function dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
     orb = orbit(angle)
 

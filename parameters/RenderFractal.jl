@@ -90,6 +90,20 @@ function escape(Radius::Real)
     return escaped
 end
 
+function escapeorconverge(Radius::Real)
+
+    function escaped(z::Number)
+        if abs2(z) > Radius || abs2(z) < 1/Radius
+            return true
+        else
+            return false
+        end
+    end
+
+    return escaped
+end
+
+
 
 function julia_patch(center::Complex, right_center::Complex)
     #Overall strategy: 
@@ -107,5 +121,16 @@ function julia_patch(center::Complex, right_center::Complex)
     return origin_patch .+ center
 end
 
-
+function inverseiterate(c::Complex,steps::Int)
+    preimages = ComplexF64[3.0+0.0im]
+    for ii in 1:steps
+        newpreimages = ComplexF64[] 
+        for point in preimages
+            push!(newpreimages,sqrt(point-c))
+            push!(newpreimages,-sqrt(point-c))
+        end
+        preimages = newpreimages
+    end
+    return preimages
+end
 

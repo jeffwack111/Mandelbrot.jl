@@ -2,19 +2,6 @@ include("DynamicRays.jl")
 include("../spiders/Spiders.jl")
 include("../trees/Lamination.jl")
 
-function inverseiterate(c::Complex,steps::Int)
-    preimages = ComplexF64[3.0+0.0im]
-    for ii in 1:steps
-        newpreimages = ComplexF64[] 
-        for point in preimages
-            push!(newpreimages,sqrt(point-c))
-            push!(newpreimages,-sqrt(point-c))
-        end
-        preimages = newpreimages
-    end
-    return preimages
-end
-
 function characteristicrays(theta::Rational) 
 
     c = spideriterate(theta,100)
