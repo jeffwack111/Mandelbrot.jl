@@ -30,12 +30,13 @@ function juliaframe(param)
     heatmap!(scene,pic,nan_color = RGBAf(0,0,0,1),colormap = :dense)
     return scene
 end
+
 function binaryframe(param)
-    epsilon = 0.01
+    epsilon = 0.0001
     #We will consider a point arrived at zero if its modulus is less than epsilon, and arrived at infinity if its modulus is greater than 1/epsilon
 
     #first, set up a grid of test points.
-    J = julia_patch(0.0+0.0im,3.0+0.0im)
+    J = julia_patch(0.0+0.0im,4.0+0.0im)
 
     maxiter = 100
     f(z) = z*z + param

@@ -167,7 +167,7 @@ end
 
 #returns the connected component which includes a given node
 function component(graph::Dict,start)
-    C = Set()
+    C = Set{Sequence}()
     activenodes = [start]
     while !isempty(activenodes)
         newactivenodes = []
@@ -181,11 +181,11 @@ function component(graph::Dict,start)
         end
         activenodes = newactivenodes
     end
-    return C
+    return Pair(start,C)
 end
 
 function removenode(graph::Dict,node)
-    G = copy(graph)
+    G = deepcopy(graph)
     neighbors = G[node]
     G = delete!(G,node)
 
@@ -207,8 +207,17 @@ function globalarms(graph::Dict,removed)
         push!(C,component(cutgraph,neighbor))
     end
 
-    return C
+    return Dict(C)
 
+end
+
+function neighbortowards(graph,base,target)
+    glarms = globalarms(graph,base)
+    for (key,value) in glarms
+        if key == target || target in value
+            return key
+        end
+    end
 end
 
 function branchorbits(graph::Dict)

@@ -50,6 +50,10 @@ function Base.getindex(S::Sequence, I::UnitRange)
     return [S[ii] for ii in I]
 end
 
+function Base.length(S::Sequence)
+    return length(S.items)
+end
+
 function Base.hash(S::Sequence,h::UInt)
     k = hash(S.preperiod,foldr(hash,S.items; init = UInt(0)))
     return hash(h,hash(:Sequence,k))
