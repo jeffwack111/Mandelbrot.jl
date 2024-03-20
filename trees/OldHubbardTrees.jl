@@ -4,18 +4,25 @@
 
 include("../sequences/AngleDoubling.jl") 
 
-function hubbardtree(K::Sequence)
+function compare(angle)
+    @time H = oldhubbardtree(angle)
+    @time G = hubbardtree(angle)
+    return H == G
+end
+
+function oldhubbardtree(K::Sequence)
     starK = Sequence(pushfirst!(copy(K.items),'*'),K.preperiod+1)
 
     #We begin with the critical orbit
     markedpoints = circshift(copy(orbit(starK).items),-1)
 
     #These points are added for orientation purposes
+    #=
     push!(markedpoints,Sequence(['B'],0))
     push!(markedpoints,Sequence(['A','B'],1))
     push!(markedpoints,Sequence(['B','A'],1))
     push!(markedpoints,Sequence(['A'],0))
-
+    =#
     n = length(markedpoints)
 
     results = fill(0,(n,n,n))
@@ -26,7 +33,7 @@ function hubbardtree(K::Sequence)
         #All triples of points on the critical orbit are run through the triod map
         for triple in subsets(collect(enumerate(markedpoints)),3)
             if results[triple[1][1],triple[2][1],triple[3][1]] == 0 #skipping the ones we've done already
-                type,seq = iteratetriod(K,(triple[1][2],triple[2][2],triple[3][2]))
+                type,seq = olditeratetriod(K,(triple[1][2],triple[2][2],triple[3][2]))
 
                 if type == "branched"
                     if isempty(findall(x->x==seq,markedpoints))#If the branch point has not been found already,
@@ -62,8 +69,8 @@ function hubbardtree(K::Sequence)
         M[ii,jj] = middles
     end
    
-    #E = [Set{Sequence}() for ii in 1:d]
-    E = [Set{Int}() for ii in 1:d]
+    E = [Set{Sequence}() for ii in 1:d]
+    #E = [Set{Int}() for ii in 1:d]
 
     for (ii,jj) in subsets(collect(1:d),2)
         pointsbetween = 0
@@ -74,11 +81,11 @@ function hubbardtree(K::Sequence)
         end
         if pointsbetween == 0
             
-            #push!(E[ii],markedpoints[jj])
-            #push!(E[jj],markedpoints[ii])
+            push!(E[ii],markedpoints[jj])
+            push!(E[jj],markedpoints[ii])
             
-            push!(E[ii],jj)
-            push!(E[jj],ii)
+            #push!(E[ii],jj)
+            #push!(E[jj],ii)
         end
     end
     
@@ -89,28 +96,26 @@ function hubbardtree(K::Sequence)
         append!(F,findall(x->x==shift(seq),markedpoints)[1])
     end
 
-    return (E, F, markedpoints)
+    #return (E, F, markedpoints)
     
-
-    #=
     d = Dict(zip(markedpoints,E))
     return d
-    =#
+    
                     
 end
 
-function hubbardtree(angle::Rational)
-    return hubbardtree(kneadingsequence(angle))
+function oldhubbardtree(angle::Rational)
+    return oldhubbardtree(kneadingsequence(angle))
 end
 
-function hubbardtree(internaladdress::Vector{Int})
+function oldhubbardtree(internaladdress::Vector{Int})
     K = kneadingsequence(internaladdress)
     seq = copy(K.items)
     seq[end] = '*'
-    return hubbardtree(Sequence(seq,0))
+    return oldhubbardtree(Sequence(seq,0))
 end
 
-function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
+function olditeratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
     triodList = []
     chopList = []
 

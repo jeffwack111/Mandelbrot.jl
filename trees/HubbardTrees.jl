@@ -3,87 +3,58 @@
 #Henk Bruin, Alexandra Kafll, Dierk Schleicher
 
 include("../sequences/AngleDoubling.jl") 
+include("Graphs.jl")
 
 function hubbardtree(K::Sequence)
     starK = Sequence(pushfirst!(copy(K.items),'*'),K.preperiod+1)
-
     #We begin with the critical orbit
     markedpoints = copy(orbit(starK).items)
 
-    #These points are added for orientation purposes
-    #=
-    push!(markedpoints,Sequence(['B'],0))
-    push!(markedpoints,Sequence(['A','B'],1))
-    push!(markedpoints,Sequence(['B','A'],1))
-    push!(markedpoints,Sequence(['A'],0))
-    =#
-
-    n = length(markedpoints)
-
-    results = fill(0,(n,n,n))
-
-    runagain = true
-    while runagain == true
-        runagain = false
-        #All triples of points on the critical orbit are run through the triod map
-        for triple in subsets(collect(enumerate(markedpoints)),3)
-            if results[triple[1][1],triple[2][1],triple[3][1]] == 0 #skipping the ones we've done already
-                type,seq = iteratetriod(K,(triple[1][2],triple[2][2],triple[3][2]))
-
-                if type == "branched"
-                    if isempty(findall(x->x==seq,markedpoints))#If the branch point has not been found already,
-                        push!(markedpoints,seq)                #add it to the list of marked points.
-                        results = cat(results,1,dims=(1,2,3))  #We then must extend the results matrix to accomodate the new marked point
-                        index = lastindex(markedpoints) 
-                        runagain = true       
-                    else
-                        index = findall(x->x==seq,markedpoints)[1]
-                    end
-                elseif type == "flat"
-                    index = triple[seq][1]
-                end
-
-                results[triple[1][1],triple[2][1],triple[3][1]] = index
-            end
+    H = Dict([Pair(starK,Set([K])),Pair(K,Set([starK]))])
+    #println(H)
+    for point in markedpoints[3:end]
+        if !(point in keys(H)) 
+            #println("adding $point")
+            H = addsequence(H,K,(starK,deepcopy(H[starK])),point)
+            #println("result is $H")
         end
     end
-
-    #We've now found all the marked points of the tree, so d is the number of vertices
-    d = length(markedpoints)
-
-    M = fill([0],(d,d))
-
-    for (ii,jj) in subsets(collect(1:d),2)
-        middles = Int[]
-        for kk in 1:d
-            if kk != ii && kk != jj 
-                triple = sort([ii,jj,kk])
-                push!(middles,results[triple[1],triple[2],triple[3]])
-            end
-        end
-        M[ii,jj] = middles
-    end
-   
-    E = [Set{Sequence}() for ii in 1:d]
-
-    for (ii,jj) in subsets(collect(1:d),2)
-        pointsbetween = 0
-        for mid in M[ii,jj]
-            if mid != ii && mid !=jj
-                pointsbetween += 1
-            end
-        end
-        if pointsbetween == 0
-            
-            push!(E[ii],markedpoints[jj])
-            push!(E[jj],markedpoints[ii])
-
-        end
-    end
-    
-    d = Dict(zip(markedpoints,E))
-    return d            
+    return H
 end
+
+function addsequence(Htree,Kseq,(A,Bset),newpoint)
+    if newpoint in collect(keys(Htree))
+        print("warning: point already in tree")
+        return Htree
+    end
+    B = pop!(Bset)
+    #println("running triod($A,$B,$newpoint)")
+    (result,point) = iteratetriod(Kseq,(A,B,newpoint))
+    #println("$result, $point")
+    if result == "branched"
+        return addto(addbetween(Htree,A,B,point),point,newpoint)
+    elseif result == "flat" && point == newpoint
+        return addbetween(Htree,A,B,newpoint)
+    else #then result is flat and the middle is A or B 
+        if length(collect(Htree[point]))==1 #then point is a leaf
+            return addto(Htree,point,newpoint)
+        elseif isempty(Bset)
+            return addto(Htree,point,newpoint)
+        elseif point == B #if B is middle then B points down the right path
+            forwardneighbors = delete!(deepcopy(Htree[B]),A)
+            #println(Htree[B])
+            #println(forwardneighbors)
+            #println("going deeper B")
+            return addsequence(Htree,Kseq,(B,forwardneighbors),newpoint)
+        elseif point == A #then A is a branchpoint and we need to try a new branch
+            #println(Htree[A])
+            #println(Bset)
+            #println("going deeper A")
+            return addsequence(Htree,Kseq,(A,Bset),newpoint)
+        end
+    end   
+end
+
 
 function hubbardtree(angle::Rational)
     return hubbardtree(kneadingsequence(angle))
@@ -105,18 +76,17 @@ function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
 
         if triod[1].items[1] == triod[2].items[1] && triod[1].items[1] == triod[3].items[1]
             triod = (shift(triod[1]),shift(triod[2]),shift(triod[3]))
-            push!(chopList,0)
 
         elseif Set([triod[1].items[1],triod[2].items[1],triod[3].items[1]]) == Set(['A','B','*']) 
             if triod[1].items[1] == '*'
-                indexofmiddle = 1
+                middle = triodList[1][1]
             elseif triod[2].items[1] == '*'
-                indexofmiddle = 2
+                middle = triodList[1][2]
             elseif triod[3].items[1] == '*'
-                indexofmiddle = 3
+                middle = triodList[1][3]
             end
             
-            return "flat",indexofmiddle
+            return "flat",middle
 
         elseif triod[1].items[1] == triod[2].items[1] 
             triod = (shift(triod[1]),shift(triod[2]),K)
@@ -139,11 +109,11 @@ function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
     if (1 in chopList) && (2 in chopList) && (3 in chopList) 
         return "branched",majorityvote(Sequence(triodList,preperiod))
     elseif !(1 in chopList)
-        return "flat", 1
+        return "flat", triodList[1][1]
     elseif !(2 in chopList)
-        return "flat", 2
+        return "flat", triodList[1][2]
     elseif !(3 in chopList)
-        return "flat", 3
+        return "flat", triodList[1][3]
     end
 end
 
@@ -162,70 +132,9 @@ function majorityvote(S::Sequence)
     for triod in S.items
         push!(newitems,majorityvote(triod))
     end
-    return Sequence(newitems,S.preperiod)
+    return Sequence(newitems,S.preperiod) 
 end
 
-#returns the connected component which includes a given node
-function component(graph::Dict,start)
-    C = Set{Sequence}()
-    activenodes = [start]
-    while !isempty(activenodes)
-        newactivenodes = []
-        for node in activenodes
-            for neighbor in graph[node]
-                if !(neighbor in C)
-                    push!(C,neighbor)
-                    push!(newactivenodes,neighbor)
-                end
-            end
-        end
-        activenodes = newactivenodes
-    end
-    return Pair(start,C)
-end
-
-function removenode(graph::Dict,node)
-    G = deepcopy(graph)
-    neighbors = G[node]
-    G = delete!(G,node)
-
-    for neighbor in neighbors
-        G[neighbor] = delete!(G[neighbor],node)
-    end
-
-    return G
-end
-
-function globalarms(graph::Dict,removed)
-    neighbors = graph[removed]
-
-    cutgraph = removenode(graph,removed)
-
-    C = []
-
-    for neighbor in neighbors
-        push!(C,component(cutgraph,neighbor))
-    end
-
-    return Dict(C)
-
-end
-
-function neighbortowards(graph,base,target)
-    glarms = globalarms(graph,base)
-    for (key,value) in glarms
-        if key == target || target in value
-            return key
-        end
-    end
-end
-
-function branchorbits(graph::Dict)
-    seqs = collect(keys(graph))
-    seqs = filter(x->x.preperiod==0,seqs)
-    seqs = filter(x->!('*' in x.items),seqs)
-    return Set([Set(orbit(seq).items) for seq in seqs])
-end
 
 #returns a set of points whose preimages form the entire tree. 
 #This means every cycle will have one representative,
