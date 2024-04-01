@@ -1,4 +1,18 @@
 #returns the connected component which includes a given node
+function adjlist(graph::Dict)
+    #first, assign an index to each point
+    nodes = collect(keys(graph))
+    E = Vector{Int}[]
+    for node in nodes
+        g = []
+        for neighbor in graph[node]
+            push!(g,findall(x->x==neighbor, nodes)[1])
+        end
+        push!(E,g)
+    end
+    return (E,nodes)
+end
+
 function component(graph::Dict,start)
     C = Set{Sequence}()
     activenodes = [start]

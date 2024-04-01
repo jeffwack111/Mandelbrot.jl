@@ -29,7 +29,7 @@ function orientedtree((IA,angles))
     
     Ngens = length(T)
 
-    X = zeros(Float64,n)
+    X = zeros(Float64,n) 
     Y = zeros(Float64,n)
     
     for (gen,vertices) in enumerate(T)
