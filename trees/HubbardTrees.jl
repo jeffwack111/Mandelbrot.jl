@@ -28,6 +28,7 @@ function addsequence(Htree,Kseq,(A,Bset),newpoint)
         return Htree
     end
     B = pop!(Bset)
+    
     #println("running triod($A,$B,$newpoint)")
     (result,point) = iteratetriod(Kseq,(A,B,newpoint))
     #println("$result, $point")
@@ -37,24 +38,21 @@ function addsequence(Htree,Kseq,(A,Bset),newpoint)
         return addbetween(Htree,A,B,newpoint)
     else #then result is flat and the middle is A or B 
         if length(collect(Htree[point]))==1 #then point is a leaf
-            return addto(Htree,point,newpoint)
-        elseif isempty(Bset)
+            #println("LEAF")
             return addto(Htree,point,newpoint)
         elseif point == B #if B is middle then B points down the right path
             forwardneighbors = delete!(deepcopy(Htree[B]),A)
-            #println(Htree[B])
-            #println(forwardneighbors)
-            #println("going deeper B")
+            #println("STEP")
             return addsequence(Htree,Kseq,(B,forwardneighbors),newpoint)
-        elseif point == A #then A is a branchpoint and we need to try a new branch
-            #println(Htree[A])
-            #println(Bset)
-            #println("going deeper A")
+        elseif isempty(Bset)
+            #println("ATTATCH")
+            return addto(Htree,point,newpoint)
+        else #then we need to try a new path
+            #println("ROTATE")
             return addsequence(Htree,Kseq,(A,Bset),newpoint)
         end
     end   
 end
-
 
 function hubbardtree(angle::Rational)
     return hubbardtree(kneadingsequence(angle))
@@ -134,7 +132,6 @@ function majorityvote(S::Sequence)
     end
     return Sequence(newitems,S.preperiod) 
 end
-
 
 #returns a set of points whose preimages form the entire tree. 
 #This means every cycle will have one representative,

@@ -5,7 +5,7 @@ struct Sequence
     items::Vector
     preperiod::Int
 
-    #this inner constructor insures that all sequences are in reduced form
+    #this inner constructor ensures that all sequences are in reduced form
     function Sequence(items::Vector,preperiod::Int)
         #first check that the periodic part is prime
         repetend = items[(preperiod+1):end]

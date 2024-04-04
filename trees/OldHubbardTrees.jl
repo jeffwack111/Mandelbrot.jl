@@ -227,7 +227,7 @@ function embedtree(AIA::AngledInternalAddress)
 
     for (jj,chpoint) in enumerate(C)
         
-        GLARM = globalarms(E, chpoint)
+        GLARM = oldglobalarms(E, chpoint)
 
         d = length(E[chpoint])
         order = zeros(Int64,d)
@@ -253,7 +253,7 @@ function embedtree(AIA::AngledInternalAddress)
         while !isempty(activenodes)
             newactivenodes = []
             for node in activenodes
-                GLARM = globalarms(R, node) 
+                GLARM = oldglobalarms(R, node) 
 
                 preimages = filter!(x->x!==chpoint,findall(x->x==node,F)) #the characteristic point is the only one which has a danger of going twice
                 append!(newactivenodes,preimages)
@@ -293,7 +293,7 @@ function embedtree(AIA::AngledInternalAddress)
     for (point,arms) in enumerate(R)
 
         if point !==z && length(arms) > 1
-            SECONDGLARM = globalarms(R,point)
+            SECONDGLARM = oldglobalarms(R,point)
 
             y = findthe(z,SECONDGLARM)
             circshift!(R[point],-y)
@@ -324,7 +324,7 @@ function findthe(item,listoflists)
     end
 end
 
-function globalarms(E,point)
+function oldglobalarms(E,point)
     neighbors = E[point]
     GA = [[point,n] for n in neighbors]
     for arm in GA
@@ -359,7 +359,7 @@ function arbembed((E,F,markedpoints))
     for (point,arms) in enumerate(R)
 
         if point !==z && length(arms) > 1
-            SECONDGLARM = globalarms(R,point)
+            SECONDGLARM = oldglobalarms(R,point)
 
             y = findthe(z,SECONDGLARM)
             circshift!(R[point],-y)
@@ -401,7 +401,7 @@ function characteristic(orb,(E,F,markedpoints)) #There is a unique characteristi
         #then there is a characteristic point in this orbit
         periodicpoints = filter(x->markedpoints[x].preperiod == 0,orb)
         for p in periodicpoints
-            GLARM = globalarms(R,p)
+            GLARM = oldglobalarms(R,p)
             #All the other points on this orbit and zero are in one arm, and the critical point is in another
             #4.1 page 34 TreesBook
             targets = filter(x->x!==p,orb)
@@ -450,7 +450,7 @@ function binary(AIA::AngledInternalAddress)
             end
         elseif x == 'A'
             parent = R[ii][end]
-            PARMS = globalarms(R,parent)
+            PARMS = oldglobalarms(R,parent)
             b = findthe(mibeta,PARMS)
             point = findthe(ii,PARMS)
             if point == b
@@ -466,7 +466,7 @@ function binary(AIA::AngledInternalAddress)
             end
         elseif x == 'B'
             parent = R[ii][end]
-            PARMS = globalarms(R,parent)
+            PARMS = oldglobalarms(R,parent)
             b = findthe(beta,PARMS)
             point = findthe(ii,PARMS)
             if point == b

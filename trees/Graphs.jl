@@ -92,4 +92,4 @@ function branchorbits(graph::Dict)
     seqs = filter(x->x.preperiod==0,seqs)
     seqs = filter(x->!('*' in x.items),seqs)
     return Set([Set(orbit(seq).items) for seq in seqs])
-end
+end 
