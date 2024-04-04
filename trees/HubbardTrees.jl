@@ -133,12 +133,15 @@ function majorityvote(S::Sequence)
     return Sequence(newitems,S.preperiod) 
 end
 
+function forwardimages(htree::Dict)
+    return Dict([Pair(key,shift(key)) for key in keys(htree)])
+end
+
 #returns a set of points whose preimages form the entire tree. 
 #This means every cycle will have one representative,
 #and the representative from cycles of branch points will be the characteristic point.
 function characteristicset(tree::Dict)
-    orbs = branchorbits(tree)
-    C = Sequence[]
+    orbs = orbits(tree)
     for orb in orbs
         #All the other points on this orbit and zero are in one arm, and the critical point is in another
         #4.1 page 34 TreesBook
