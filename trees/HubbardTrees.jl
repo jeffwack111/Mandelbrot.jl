@@ -156,8 +156,21 @@ function grandorbit(htree::Dict, start)
     return Set(push!(p.second,p.first))
 end
 
-function orbits(htree::Dict)
+function dynamiccomponents(htree::Dict)
     return Set([grandorbit(htree,x) for x in keys(htree)])
+end
+
+function ischaracteristic(htree,periodicpoint)
+    glarms = globalarms(htree,periodicpoint)
+    gorbit = grandorbit(htree,periodicpoint)
+
+    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+    one = shift(zero)
+
+    orb = grand
+
+    return (zarm,oarm)
+
 end
 
 #returns a set of points whose preimages form the entire tree. 
