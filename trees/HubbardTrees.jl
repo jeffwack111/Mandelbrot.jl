@@ -134,7 +134,30 @@ function majorityvote(S::Sequence)
 end
 
 function forwardimages(htree::Dict)
-    return Dict([Pair(key,shift(key)) for key in keys(htree)])
+    return Dict([Pair(key,[shift(key)]) for key in keys(htree)])
+end 
+
+function preimages(htree::Dict)
+    fimages = forwardimages(htree)
+    return  Dict([Pair(key,filter(x -> key in fimages[x],keys(htree))) for key in keys(htree)])
+end
+
+function forwardorbit(htree::Dict,start)
+    return component(forwardimages(htree), start)
+end
+
+function backwardsorbit(htree::Dict, start)
+    return component(preimages(htree), start)
+end
+
+function grandorbit(htree::Dict, start)
+    dynamicadjacency = mergewith(append!,forwardimages(htree),preimages(htree))
+    p = component(dynamicadjacency, start)
+    return Set(push!(p.second,p.first))
+end
+
+function orbits(htree::Dict)
+    return Set([grandorbit(htree,x) for x in keys(htree)])
 end
 
 #returns a set of points whose preimages form the entire tree. 
