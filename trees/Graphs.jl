@@ -86,5 +86,3 @@ function neighbortowards(graph,base,target)
         end
     end
 end
-
-

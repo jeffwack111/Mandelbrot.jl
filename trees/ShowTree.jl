@@ -1,7 +1,7 @@
 using CairoMakie
 include("HubbardTrees.jl")
 
-function showorientedtree(E,root)
+function showorientedtree(E,root,labels)
     T = [[root],E[root]]
  
     nadded = 1 + length(T[2])
@@ -36,7 +36,7 @@ function showorientedtree(E,root)
     
     f = Figure()
 
-    ax1 = Axis(f[1, 1],aspect = 1)
+    ax1 = Axis(f[1, 1],aspect = 1, limits = (0,1,0,1))
     hidedecorations!(ax1)
     hidespines!(ax1)
 
@@ -47,16 +47,36 @@ function showorientedtree(E,root)
     end
 
     scatter!(pos)
-    tex = ["$ii" for ii in 1:n]
+    tex = [node[2] for node in labels]
     text!(pos,text = tex)
     
     return f
 end
 
-function drawtree(H,root)
+function drawtree(H) 
     (E,nodes) = adjlist(H)
+    root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
+    
+    criticalorbit = orbit(root)
+    
+    labels = []
+    
+    for node in nodes
+        idx = findall(x->x==node, criticalorbit.items)
+        if isempty(idx)
+            push!(labels,Pair(node,repr("text/plain",node)))
+        else
+            push!(labels,Pair(node,string(idx[1]-criticalorbit.preperiod-1)))
+        end
+    end
+
     rootindex = findall(x->x==root,nodes)[1]
-    return showorientedtree(E,rootindex)
+    return showorientedtree(E,rootindex,labels)
 end
+
+function drawtree(angle::Rational)
+    return drawtree(hubbardtree(angle))
+end
+
 
 

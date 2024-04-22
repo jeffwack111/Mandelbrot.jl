@@ -36,6 +36,10 @@ struct Sequence
     end
 end
 
+function Sequence(str::String,preperiod::Int)
+    return Sequence(Vector{Char}(str),preperiod)
+end
+
 import Base.==
 function ==(x::Sequence,y::Sequence)
     return x.items==y.items && x.preperiod==y.preperiod
@@ -57,6 +61,20 @@ end
 function Base.hash(S::Sequence,h::UInt)
     k = hash(S.preperiod,foldr(hash,S.items; init = UInt(0)))
     return hash(h,hash(:Sequence,k))
+end
+
+function Base.show(io::IO, s::Sequence)
+    if typeof(s.items) == Vector{Char}
+        str = String(s.items)
+        L = s.preperiod
+        if L == 0
+            return print(io,"|"*str*"|")
+        else
+            return print(io,str[1:L]*"|"*str[L+1:end]*"|")
+        end
+    else
+        return print(repr(s.preperiod)*"\n"*repr(s.items))
+    end
 end
 
 function period(S::Sequence)
