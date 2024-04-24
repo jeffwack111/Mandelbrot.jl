@@ -46,7 +46,7 @@ function orbit(angle::Rational)
 
     preperiod = findall(x->x==angle,items)[1] - 1
 
-    return Sequence(items,preperiod)
+    return Sequence{Rational}(items,preperiod)
     
 end
 
@@ -67,7 +67,7 @@ function thetaitinerary(theta::Rational,orb::Sequence)
         end
     end
     
-    return Sequence(itinerary,orb.preperiod)
+    return Sequence{Char}(itinerary,orb.preperiod)
 end
 
 function kneadingsequence(angle::Rational)
@@ -86,7 +86,7 @@ function binary(theta::Rational)
             push!(itinerary,'1')
         end
     end
-    return Sequence(collect(itinerary),orb.preperiod)
+    return Sequence{Char}(collect(itinerary),orb.preperiod)
 
 end
 

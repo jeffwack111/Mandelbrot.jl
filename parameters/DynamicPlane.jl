@@ -1,4 +1,5 @@
 include("DynamicRays.jl")
+include("RenderFractal.jl")
 include("../spiders/Spiders.jl")
 include("../trees/Lamination.jl")
 

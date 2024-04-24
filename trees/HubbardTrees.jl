@@ -5,8 +5,8 @@
 include("../sequences/AngleDoubling.jl") 
 include("Graphs.jl")
 
-function hubbardtree(K::Sequence)
-    starK = Sequence(pushfirst!(copy(K.items),'*'),K.preperiod+1)
+function hubbardtree(K::Sequence{Char})
+    starK = Sequence{Char}(pushfirst!(copy(K.items),'*'),K.preperiod+1)
     #We begin with the critical orbit
     markedpoints = copy(orbit(starK).items)
 
@@ -62,11 +62,11 @@ function hubbardtree(internaladdress::Vector{Int})
     K = kneadingsequence(internaladdress)
     seq = copy(K.items)
     seq[end] = '*'
-    return hubbardtree(Sequence(seq,0))
+    return hubbardtree(Sequence{Char}(seq,0))
 end
 
 function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
-    triodList = []
+    triodList = Tuple{Sequence,Sequence,Sequence}[]
     chopList = []
 
     while isempty(findall(x->x==triod,triodList))
@@ -105,7 +105,7 @@ function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
     preperiod = findall(x->x==triod,triodList)[1] - 1
 
     if (1 in chopList) && (2 in chopList) && (3 in chopList) 
-        return "branched",majorityvote(Sequence(triodList,preperiod))
+        return "branched",majorityvote(Sequence{Tuple{Sequence,Sequence,Sequence}}(triodList,preperiod))
     elseif !(1 in chopList)
         return "flat", triodList[1][1]
     elseif !(2 in chopList)
@@ -130,7 +130,7 @@ function majorityvote(S::Sequence)
     for triod in S.items
         push!(newitems,majorityvote(triod))
     end
-    return Sequence(newitems,S.preperiod) 
+    return Sequence{Char}(newitems,S.preperiod) 
 end
 
 function forwardimages(htree::Dict)

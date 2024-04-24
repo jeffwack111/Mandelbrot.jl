@@ -1,12 +1,12 @@
 using Primes
 using IterTools
 
-struct Sequence
-    items::Vector
+struct Sequence{T}
+    items::Vector{T}
     preperiod::Int
 
     #this inner constructor ensures that all sequences are in reduced form
-    function Sequence(items::Vector,preperiod::Int)
+    function Sequence{T}(items::Vector{T},preperiod::Int) where T
         #first check that the periodic part is prime
         repetend = items[(preperiod+1):end]
         k = length(repetend)
@@ -28,9 +28,9 @@ struct Sequence
                 pop!(preperiod)
                 circshift!(repetend,1)
             end
-            return new(append!(copy(preperiod),repetend),length(preperiod)) 
+            return new{T}(append!(copy(preperiod),repetend),length(preperiod)) 
         else
-            return new(repetend,0)
+            return new{T}(repetend,0)
         end
     
     end
@@ -63,17 +63,13 @@ function Base.hash(S::Sequence,h::UInt)
     return hash(h,hash(:Sequence,k))
 end
 
-function Base.show(io::IO, s::Sequence)
-    if typeof(s.items) == Vector{Char}
-        str = String(s.items)
-        L = s.preperiod
-        if L == 0
-            return print(io,"|"*str*"|")
-        else
-            return print(io,str[1:L]*"|"*str[L+1:end]*"|")
-        end
+function Base.show(io::IO, s::Sequence{Char})
+    str = String(s.items)
+    L = s.preperiod
+    if L == 0
+        return print(io,"|"*str*"|")
     else
-        return print(repr(s.preperiod)*"\n"*repr(s.items))
+        return print(io,str[1:L]*"|"*str[L+1:end]*"|")
     end
 end
 
@@ -81,13 +77,13 @@ function period(S::Sequence)
     return length(S.items) - S.preperiod
 end
 
-function shift(seq::Sequence)
+function shift(seq::Sequence{T}) where T
     if seq.preperiod == 0 
         #then seq is periodic
-        return Sequence(circshift(copy(seq.items),-1),0)
+        return Sequence{T}(circshift(copy(seq.items),-1),0)
     else
         #then the sequence is preperiodic
-        return Sequence(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
+        return Sequence{T}(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
     end  
 end
 
@@ -101,7 +97,7 @@ function orbit(seq::Sequence)
 
     preperiod = findall(x->x==seq,items)[1] - 1
 
-    return Sequence(items,preperiod)
+    return Sequence{Sequence}(items,preperiod)
 end
 
 function divisors(n)

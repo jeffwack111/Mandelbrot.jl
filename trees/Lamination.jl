@@ -1,6 +1,9 @@
 using CairoMakie
 using ColorSchemes
 
+#Merge this file with angledoubling? 
+#Do we need a Leaf type? or does tuple{Rational,Rational} suffice?
+
 include("../sequences/AngleDoubling.jl")
 
 #The Structure of the Set of Quadratic Invariant Laminations
