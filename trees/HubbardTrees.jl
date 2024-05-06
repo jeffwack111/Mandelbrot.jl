@@ -160,29 +160,159 @@ function dynamiccomponents(htree::Dict)
     return Set([grandorbit(htree,x) for x in keys(htree)])
 end
 
+#Then there are a unique point z ∈ {zk}n k=1 and two different components of T \ {z}
+#such that the critical value is contained in one component and 0 and all other points
+#zk not= z are in the other one
 function ischaracteristic(htree,periodicpoint)
     glarms = globalarms(htree,periodicpoint)
-    gorbit = grandorbit(htree,periodicpoint)
+
+    if length(collect(keys(glarms))) < 3
+        return false
+    end
+
+    forbit = forwardorbit(htree,periodicpoint)[2]
 
     zero = first(filter(x->x.items[1]=='*',keys(htree)))
-    one = shift(zero)
 
-    orb = grand
+    won = shift(zero)
 
-    return (zarm,oarm)
+    zarm = neighbortowards(htree,periodicpoint,zero)
+
+    for point in forbit
+        if point != periodicpoint && !(point in glarms[zarm])
+            return false
+        end
+    end
+    
+    if won in glarms[zarm]
+        return false
+    end
+
+    return true
 
 end
 
-#returns a set of points whose preimages form the entire tree. 
-#This means every cycle will have one representative,
-#and the representative from cycles of branch points will be the characteristic point.
+#This checks too many points with ischaracteristic. 
+#The orbits of the tree should be divided up first, 
+#then one characteristic point is found for each orbit
 function characteristicset(tree::Dict)
-    orbs = orbits(tree)
-    for orb in orbs
-        #All the other points on this orbit and zero are in one arm, and the critical point is in another
-        #4.1 page 34 TreesBook
+    nodes = collect(keys(tree))
+    periodicnodes = filter(x -> x.preperiod == 0 , nodes)
+    C = Sequence{Char}[]
+    for node in periodicnodes
+        if ischaracteristic(tree,node)
+            push!(C,node)
+        end
+    end
+    return C
+end
+
+function embed(AIA::AngledInternalAddress)
+    H = hubbardtree(AIA.addr)
+    charpoints = characteristicset(H)
+    nums = Int[]
+    for angle in AIA.angles
+        if denominator(angle) > 2
+            push!(nums,numerator(angle))
+        end
+    end
+
+    orientedH = Dict()
+
+    for (node, num) in zip(charpoints,nums)
+        merge!(orientedH,orientpreimages(H,orientcharacteristic(H, node,num)))
+    end
+
+    zero = first(filter(x->x.items[1]=='*',keys(H)))
+    for node in orbit(zero).items
+        push!(orientedH,Pair(node,collect(H[node])))
+    end
+
+    if orientedH[zero][1].items[1] == 'B'
+        circshift!(orientedH[zero],1)
+    end
+
+    return orientedH
+
+end
+
+function embed(angle::Rational)
+    return embed(AngledInternalAddress(angle))
+end
+
+
+function orient(H,source::Sequence{Char},target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
+    
+    sourcenode = source
+    sourceneighbors = H[source]
+
+    targetnode = target[1]
+    targetneighbors = target[2]
+
+    targetarms = globalarms(H,targetnode)
+    orientedtargetarms = [push!(targetarms[arm],arm) for arm in targetneighbors]
+    #println(orientedtargetarms)
+    indexpairs = []
+
+    for node in sourceneighbors
+        
+        image = shift(node)
+        #println(image)
+        #find which arm of the target the image lays in
+        armindex = findone(x-> image in x,orientedtargetarms)
+        push!(indexpairs,Pair(node,armindex))
+    end
+
+    oriented = [keyvalue[1] for keyvalue in sort(indexpairs,by = x -> x[2])]
+
+    return Pair(sourcenode,oriented)
+
+end
+
+function orientcharacteristic(H,node,num)
+    glarms = globalarms(H,node)
+    zero = first(filter(x->x.items[1]=='*',keys(H)))
+    c = shift(zero)
+    degree = length(glarms)
+    k = period(node)
+    #the characteristic point has arms towards 0,1,1+k,1+2k, where k is the period of the characteristic point
+    #the numerator tells us the arm towards 1 is in position num
+    #with 0-indexing
+    #0, 0%n
+    #1,num%n
+    #1+k,2*num%n
+    indexpairs = [Pair(neighbortowards(H,node,shiftby(c,k*x)),mod((x+1)*num,degree)) for x in 0:degree-1]
+    oriented = [x[1] for x in sort(indexpairs, by=z->z[2])]
+    return Pair(node,oriented)
+end
+
+function orientpreimages(H,target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
+    P = preimages(H)
+    keyvaluepairs = Dict(target)
+    activetargets = [target[1]]
+    while !isempty(activetargets)
+        newactivetargets = []
+        for targ in activetargets
+            for preim in P[targ]
+                newkeyvalue = orient(H,preim,Pair(targ,keyvaluepairs[targ]))
+                if !(preim in keys(keyvaluepairs))
+                    push!(keyvaluepairs,newkeyvalue)
+                    push!(newactivetargets,preim)
+                end
+            end
+        end
+        activetargets = newactivetargets
+    end
+    return keyvaluepairs
+end
+
+function findone(f,A)
+    list = findall(f,A)
+    if length(list) == 0
+        error("none found!")
+    elseif length(list) > 1
+        error("more than one found!")
+    else
+        return first(list)
     end
 end
-
-
-

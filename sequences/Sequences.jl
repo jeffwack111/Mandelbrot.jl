@@ -37,7 +37,7 @@ struct Sequence{T}
 end
 
 function Sequence(str::String,preperiod::Int)
-    return Sequence(Vector{Char}(str),preperiod)
+    return Sequence{Char}(Vector{Char}(str),preperiod)
 end
 
 import Base.==
@@ -85,6 +85,18 @@ function shift(seq::Sequence{T}) where T
         #then the sequence is preperiodic
         return Sequence{T}(collect(Iterators.drop(seq.items,1)),seq.preperiod-1)
     end  
+end
+
+function shiftby(seq::Sequence,n::Int)
+    if n<0
+        error("cannot shift a sequence a negative number of times")
+    elseif n==0
+        return seq
+    elseif n==1
+        return shift(seq)
+    else
+        return shift(shiftby(seq,n-1))
+    end
 end
 
 function orbit(seq::Sequence)

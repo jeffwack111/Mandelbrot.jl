@@ -109,7 +109,7 @@ function angleof(binary::Sequence)
 end
 
 function angleof(digs::String)
-    return angleof(Sequence(collect(digs),0))
+    return angleof(Sequence{har}(collect(digs),0))
 end
 
 
@@ -156,7 +156,7 @@ end
 function kneadingsequence(intadd::Vector{Int})
     internaladdress = copy(intadd)
     if internaladdress == [1]
-        return Sequence(['A'],0)
+        return Sequence{Char}(['A'],0)
     else
         s = pop!(internaladdress)
         K = kneadingsequence(internaladdress)
@@ -166,7 +166,7 @@ function kneadingsequence(intadd::Vector{Int})
         else
             push!(R,'A')
         end
-        return Sequence(R,0)
+        return Sequence{Char}(R,0)
     end
 end
 

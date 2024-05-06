@@ -10,8 +10,10 @@ function showorientedtree(E,root,labels)
     while nadded < n
         parents = T[end]
         children = []
-        for vertex in parents
-            for u in E[vertex]
+        for parent in parents
+            #cycle E[parent] so that the grandparent is in the last position
+            s = findone(x-> x in T[end-1], E[parent])
+            for u in circshift(E[parent],-s)
                 if !(u in T[end-1])
                     push!(children,u)
                 end
@@ -53,7 +55,7 @@ function showorientedtree(E,root,labels)
     return f
 end
 
-function drawtree(H) 
+function drawtree(H::Dict) 
     (E,nodes) = adjlist(H)
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
     
@@ -75,7 +77,7 @@ function drawtree(H)
 end
 
 function drawtree(angle::Rational)
-    return drawtree(hubbardtree(angle))
+    return drawtree(embed(AngledInternalAddress(angle)))
 end
 
 
