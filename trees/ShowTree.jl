@@ -1,7 +1,7 @@
 using CairoMakie
 include("HubbardTrees.jl")
 
-function showorientedtree(E,root,labels)
+function showorientedtree(E,root,labels,boundary)
     T = [[root],E[root]]
  
     nadded = 1 + length(T[2])
@@ -44,7 +44,11 @@ function showorientedtree(E,root,labels)
 
     for (ii,p) in enumerate(E)
         for n in p
-            lines!([pos[ii],pos[n]])
+            if ii in boundary && n in boundary
+                lines!([pos[ii],pos[n]],color = "red")
+            else
+                lines!([pos[ii],pos[n]])
+            end
         end
     end
 
@@ -60,6 +64,10 @@ function drawtree(H::Dict)
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
     
     criticalorbit = orbit(root)
+
+    boundary_vertices = getboundary(H)
+
+    boundary = [findone(y->y==x,nodes) for x in boundary_vertices]
     
     labels = []
     
@@ -73,7 +81,7 @@ function drawtree(H::Dict)
     end
 
     rootindex = findall(x->x==root,nodes)[1]
-    return showorientedtree(E,rootindex,labels)
+    return showorientedtree(E,rootindex,labels,boundary)
 end
 
 function drawtree(angle::Rational)

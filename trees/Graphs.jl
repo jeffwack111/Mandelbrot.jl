@@ -57,8 +57,8 @@ function removenode(graph::Dict,node)
     G = delete!(G,node)
 
     for neighbor in neighbors
-        G[neighbor] = delete!(G[neighbor],node)
-    end
+        filter!(x-> x!= node,G[neighbor])
+    end 
 
     return G
 end

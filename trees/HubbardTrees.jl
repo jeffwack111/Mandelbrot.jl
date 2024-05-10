@@ -55,7 +55,7 @@ function addsequence(Htree,Kseq,(A,Bset),newpoint)
 end
 
 function hubbardtree(angle::Rational)
-    return hubbardtree(kneadingsequence(angle))
+    return embed(angle)
 end
 
 function hubbardtree(internaladdress::Vector{Int})
@@ -217,7 +217,7 @@ function embed(AIA::AngledInternalAddress)
         end
     end
 
-    orientedH = Dict()
+    orientedH = Dict{Sequence{Char}, Vector{Sequence{Char}}}()
 
     for (node, num) in zip(charpoints,nums)
         merge!(orientedH,orientpreimages(H,orientcharacteristic(H, node,num)))
@@ -306,6 +306,7 @@ function orientpreimages(H,target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
     return keyvaluepairs
 end
 
+#This function is a wrapper for findall which throws an error if there is not exactly one element satisfying f
 function findone(f,A)
     list = findall(f,A)
     if length(list) == 0
@@ -316,3 +317,121 @@ function findone(f,A)
         return first(list)
     end
 end
+
+function isbetween(htree::Dict,a,b,c)
+    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+    K = shift(zero)
+    (type,vertex) = iteratetriod(K,(a,b,c))
+    if type == "flat" && vertex == a
+        return true
+    else
+        return false
+    end
+end
+
+function getboundary(htree::Dict)
+    beta = Sequence("B",0)
+    mbeta = Sequence("AB",1)
+
+    return filter(x -> isbetween(htree,x,beta,mbeta),keys(htree))
+end
+
+function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}})
+    boundary = getboundary(htree)
+    beta = Sequence("B",0)
+    #mbeta = Sequence("AB",1)
+
+    bleaves = collect(filter(x->length(htree[x])==1,boundary))
+
+    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+    K = shift(zero)
+    (type,vertex) = iteratetriod(K,(beta,bleaves[1],bleaves[2]))
+    
+    activenode = filter(x -> x==vertex,bleaves)[1]
+    endnode = filter(x-> x!=activenode,bleaves)[1]
+    
+    #We now want to traverse the boundary, assigning 1s and 0s to the entire tree as we go.
+    #We will give the symbols to the neighbors at each vertex, so that in place of the Vector{Sequence{Char}}, we have a Vector{Tuple{Sequence{Char},{Char}}}.
+    #The symbols are read as: the access to this vertex which is counterclockwise from this neighbor is this region.
+    #Heading to minus beta from beta, 0 is on the left and 1 is on the right.
+    #As we head along, we have a boundary point behind us and a boundary point ahead of us. 
+    #The neighbors which are counterclockwise of the point behind and clockwise of the point ahead are in region 0
+
+    OZ = Dict()
+    lastnode = nothing
+
+    while activenode != endnode
+        #first we label all of the activenode's neighbors.
+        #If any of them are not boundary points, we label that entire branch.
+        #what is the next node? 
+        #It is the unique boundary point which is a neighbor of the current node and is not the last node.
+        nextnode = first(filter(z -> z in htree[activenode] && z != lastnode, boundary))
+        idx = findone(x-> x==nextnode,htree[activenode])
+        
+        labels = Dict(Pair(nextnode,'1'))
+
+        num_neighbors = length(htree[activenode])
+
+        idx = mod1(idx+1,num_neighbors)
+        sym = '1'
+        while htree[activenode][idx] != nextnode
+            if htree[activenode][idx] == lastnode
+                sym = '0'
+            else
+                #go down the rabbit hole
+                keyvalue = component(removenode(htree,activenode),htree[activenode][idx])
+                for child in push!(keyvalue[2],keyvalue[1])
+                    innerlabels = Dict()
+                    for neighb in htree[child]
+                        push!(innerlabels,Pair(neighb,sym))
+                    end
+                    push!(OZ,Pair(child,innerlabels))
+                end
+            end
+            push!(labels, Pair(htree[activenode][idx],sym))
+            idx = mod1(idx+1,num_neighbors)
+        end
+        push!(OZ,Pair(activenode,labels))
+        lastnode = activenode
+        activenode = nextnode
+    end
+
+    #We now do the last node manually. It is a leaf, so has only one neighbor
+    neb = first(htree[activenode])
+    push!(OZ,Pair(activenode,Dict([Pair(neb,'0')])))
+            
+    return OZ
+end
+
+function anglesof(htree,node)
+    OZtree = labelonezero(htree)
+    
+    neighbors = collect(htree[node])
+    angles = [Char[] for x in neighbors]
+
+    visited = []
+    while !(node in visited)
+        push!(visited,node)
+        for (ii, neighb) in enumerate(neighbors)
+            push!(angles[ii],OZtree[node][neighb])
+        end
+        node = shift(node)
+        for (ii, neighb) in enumerate(neighbors)
+            neighbors[ii] = neighbortowards(htree,node,shift(neighb))
+        end
+    end
+
+    thetas = [angleof(Sequence{Char}(digits,node.preperiod)) for digits in angles]
+    return thetas
+end
+
+function angle_echo(theta::Rational)
+    aia = AngledInternalAddress(theta)
+    K = kneadingsequence(theta)
+    H = embed(aia)
+    return anglesof(H,K)
+end
+
+
+
+
