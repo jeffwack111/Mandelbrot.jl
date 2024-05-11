@@ -1,7 +1,7 @@
 using CairoMakie
 include("HubbardTrees.jl")
 
-function showorientedtree(E,root,labels,boundary)
+function showadjlist(E,root,labels,nodecolors=[],edgecolors=[])
     T = [[root],E[root]]
  
     nadded = 1 + length(T[2])
@@ -44,30 +44,30 @@ function showorientedtree(E,root,labels,boundary)
 
     for (ii,p) in enumerate(E)
         for n in p
-            if ii in boundary && n in boundary
-                lines!([pos[ii],pos[n]],color = "red")
-            else
+            if isempty(edgecolors)
                 lines!([pos[ii],pos[n]])
+            else
+                lines!([pos[ii],pos[n]],color = edgecolors[ii,n])
             end
         end
     end
-
-    scatter!(pos)
+    if isempty(nodecolors)
+        scatter!(pos)
+    else
+        scatter!(pos,color = nodecolors)
+    end
     tex = [node[2] for node in labels]
     text!(pos,text = tex)
     
     return f
 end
 
+
 function drawtree(H::Dict) 
     (E,nodes) = adjlist(H)
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
     
     criticalorbit = orbit(root)
-
-    boundary_vertices = getboundary(H)
-
-    boundary = [findone(y->y==x,nodes) for x in boundary_vertices]
     
     labels = []
     
@@ -81,11 +81,34 @@ function drawtree(H::Dict)
     end
 
     rootindex = findall(x->x==root,nodes)[1]
-    return showorientedtree(E,rootindex,labels,boundary)
+    return showadjlist(E,rootindex,labels)
+end
+
+function draworientedtree(H::Dict) 
+    (E,nodes) = adjlist(H)
+    #We need to make colorlist and edge color matrix here
+    root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
+    
+    criticalorbit = orbit(root)
+    
+    labels = []
+    
+    for node in nodes
+        idx = findall(x->x==node, criticalorbit.items)
+        if isempty(idx)
+            push!(labels,Pair(node,repr("text/plain",node)))
+        else
+            push!(labels,Pair(node,string(idx[1]-criticalorbit.preperiod-1)))
+        end
+    end
+
+    rootindex = findall(x->x==root,nodes)[1]
+    return showadjlist(E,rootindex,labels,boundary)
 end
 
 function drawtree(angle::Rational)
-    return drawtree(embed(AngledInternalAddress(angle)))
+    (OH,b) = embed(AngledInternalAddress(angle))
+    return drawtree(OH)
 end
 
 

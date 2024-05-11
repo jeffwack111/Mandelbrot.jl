@@ -109,7 +109,7 @@ function angleof(binary::Sequence)
 end
 
 function angleof(digs::String)
-    return angleof(Sequence{har}(collect(digs),0))
+    return angleof(Sequence{Char}(collect(digs),0))
 end
 
 
