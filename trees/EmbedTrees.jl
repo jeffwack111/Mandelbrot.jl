@@ -129,13 +129,10 @@ function orient(H,source::Sequence{Char},target::Pair{Sequence{Char}, Vector{Seq
 
     targetarms = globalarms(H,targetnode)
     orientedtargetarms = [push!(targetarms[arm],arm) for arm in targetneighbors]
-    #println(orientedtargetarms)
     indexpairs = []
 
     for node in sourceneighbors
-        
         image = shift(node)
-        #println(image)
         #find which arm of the target the image lays in
         armindex = findone(x-> image in x,orientedtargetarms)
         push!(indexpairs,Pair(node,armindex))
@@ -151,15 +148,15 @@ function orientcharacteristic(H,node,num)
     glarms = globalarms(H,node)
     zero = first(filter(x->x.items[1]=='*',keys(H)))
     c = shift(zero)
-    degree = length(glarms)
-    k = period(node)
+    q = length(glarms)
+    n = period(node)
     #the characteristic point has arms towards 0,1,1+k,1+2k, where k is the period of the characteristic point
     #the numerator tells us the arm towards 1 is in position num
     #with 0-indexing
-    #0, 0%n
-    #1,num%n
-    #1+k,2*num%n
-    indexpairs = [Pair(neighbortowards(H,node,shiftby(c,k*x)),mod((x+1)*num,degree)) for x in 0:degree-1]
+    #0, 0%q
+    #1,num%q
+    #1+n,2*num%q
+    indexpairs = [Pair(neighbortowards(H,node,shiftby(c,n*x)),mod1(x*num,q)) for x in 0:q-1]
     oriented = [x[1] for x in sort(indexpairs, by=z->z[2])]
     return Pair(node,oriented)
 end

@@ -1,7 +1,8 @@
 using CairoMakie
 include("HubbardTrees.jl")
+include("EmbedTrees.jl")
 
-function showadjlist(E,root,labels,nodecolors=[],edgecolors=[])
+function showadjlist(E,root,labels,nodecolors=[])
     T = [[root],E[root]]
  
     nadded = 1 + length(T[2])
@@ -44,10 +45,22 @@ function showadjlist(E,root,labels,nodecolors=[],edgecolors=[])
 
     for (ii,p) in enumerate(E)
         for n in p
-            if isempty(edgecolors)
+            if isempty(nodecolors)
                 lines!([pos[ii],pos[n]])
             else
-                lines!([pos[ii],pos[n]],color = edgecolors[ii,n])
+                if nodecolors[ii] == "red" || nodecolors[n] == "red"
+                    lines!([pos[ii],pos[n]],color = "red")
+                elseif nodecolors[ii] == "blue" || nodecolors[n] == "blue"
+                    lines!([pos[ii],pos[n]],color = "blue")
+                elseif nodecolors[ii] == "orange" || nodecolors[n] == "orange"
+                    lines!([pos[ii],pos[n]],color = "orange")
+                elseif nodecolors[ii] == "green" || nodecolors[n] == "green"
+                    lines!([pos[ii],pos[n]],color = "green")
+                elseif nodecolors[ii] == "orangered2" || nodecolors[n] == "orangered2"
+                    lines!([pos[ii],pos[n]],color = "orangered2")
+                elseif nodecolors[ii] == "turquoise" || nodecolors[n] == "turquoise"
+                    lines!([pos[ii],pos[n]],color = "turquoise")
+                end
             end
         end
     end
@@ -84,7 +97,7 @@ function drawtree(H::Dict)
     return showadjlist(E,rootindex,labels)
 end
 
-function draworientedtree(H::Dict) 
+function drawtree(H::Dict,OZ,boundary) 
     (E,nodes) = adjlist(H)
     #We need to make colorlist and edge color matrix here
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
@@ -92,6 +105,37 @@ function draworientedtree(H::Dict)
     criticalorbit = orbit(root)
     
     labels = []
+    nodecolors = []
+    zeroindex = findone(x->x.items[1] == '*',boundary)
+    for node in nodes
+        if node in boundary
+            #determine if it is before, after, or equal to zero
+            nodeindex = findone(x->x == node,boundary)
+            if nodeindex < zeroindex #then we are in region B
+                push!(nodecolors,"orangered2")
+            elseif nodeindex == zeroindex #then this is zero
+                push!(nodecolors,"black")
+            else #then we are in region A
+                push!(nodecolors,"turquoise")
+            end
+        else #we are fully in one of the 4 regions
+            neighb = H[node][1]
+            if node.items[1] == 'A'
+                if OZ[node][neighb] == '0'
+                    push!(nodecolors,"blue")
+                else
+                    push!(nodecolors,"green")
+                end
+            else
+                if OZ[node][neighb] == '0'
+                    push!(nodecolors,"red")
+                else
+                    push!(nodecolors,"orange")
+                end
+            end
+        end
+    end
+
     
     for node in nodes
         idx = findall(x->x==node, criticalorbit.items)
@@ -103,12 +147,13 @@ function draworientedtree(H::Dict)
     end
 
     rootindex = findall(x->x==root,nodes)[1]
-    return showadjlist(E,rootindex,labels,boundary)
+    return showadjlist(E,rootindex,labels,nodecolors)
 end
 
 function drawtree(angle::Rational)
     (OH,b) = embed(AngledInternalAddress(angle))
-    return drawtree(OH)
+    OZ = labelonezero(OH,b)
+    return drawtree(OH,OZ,b)
 end
 
 
