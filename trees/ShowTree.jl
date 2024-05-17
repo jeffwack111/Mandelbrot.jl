@@ -156,5 +156,7 @@ function drawtree(angle::Rational)
     return drawtree(OH,OZ,b)
 end
 
-
+function drawtree(K::Sequence)
+    return drawtree(hubbardtree(K))
+end
 

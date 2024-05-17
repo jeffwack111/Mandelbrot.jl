@@ -144,19 +144,22 @@ function orient(H,source::Sequence{Char},target::Pair{Sequence{Char}, Vector{Seq
 
 end
 
+#SKETCHY SKETCHY
 function orientcharacteristic(H,node,num)
     glarms = globalarms(H,node)
     zero = first(filter(x->x.items[1]=='*',keys(H)))
+    per = period(zero)
     c = shift(zero)
     q = length(glarms)
     n = period(node)
-    #the characteristic point has arms towards 0,1,1+k,1+2k, where k is the period of the characteristic point
+    
+    #the characteristic point has arms towards 1-n,1,1+n,1+2n, where n is the period of the characteristic point
     #the numerator tells us the arm towards 1 is in position num
     #with 0-indexing
-    #0, 0%q
+    #1-n, 0%q
     #1,num%q
-    #1+n,2*num%q
-    indexpairs = [Pair(neighbortowards(H,node,shiftby(c,n*x)),mod1(x*num,q)) for x in 0:q-1]
+    #1+n,2*num
+    indexpairs = [Pair(neighbortowards(H,node,shiftby(c,per+n*x)),mod1(x*num,q)) for x in -1:(q-2)]
     oriented = [x[1] for x in sort(indexpairs, by=z->z[2])]
     return Pair(node,oriented)
 end
@@ -285,7 +288,7 @@ function anglesof((htree,boundary),node)
         end
     end
 
-    thetas = [angleof(Sequence{Char}(digits,node.preperiod)) for digits in angles]
+    thetas = [Sequence{Char}(digits,node.preperiod) for digits in angles]
     return thetas
 end
 
@@ -293,8 +296,16 @@ function angle_echo(theta::Rational)
     aia = AngledInternalAddress(theta)
     K = kneadingsequence(theta)
     H = embed(aia)
-    return anglesof(H,K)
+    return [angleof(t) for t in anglesof(H,K)]
 end
+
+function valid_binary(theta)
+    aia = AngledInternalAddress(theta)
+    K = kneadingsequence(theta)
+    H = embed(aia)
+    return binary(theta) in anglesof(H,K)
+end
+
 
 
 
