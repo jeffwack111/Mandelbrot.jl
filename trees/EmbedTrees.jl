@@ -218,12 +218,11 @@ function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}},bounda
     
     #We now want to traverse the boundary, assigning 1s and 0s to the entire tree as we go.
     #We will give the symbols to the neighbors at each vertex, so that in place of the Vector{Sequence{Char}}, we have a Vector{Tuple{Sequence{Char},{Char}}}.
-    #The symbols are read as: the access to this vertex which is counterclockwise from this neighbor is this region.
     #Heading to minus beta from beta, 0 is on the left and 1 is on the right.
     #As we head along, we have a boundary point behind us and a boundary point ahead of us. 
     #The neighbors which are counterclockwise of the point behind and clockwise of the point ahead are in region 0
 
-    OZ = Dict()
+    OZ = Dict([Pair(node,'*') for node in boundary])
     lastnode = nothing
 
     for (ii,activenode) in enumerate(boundary[1:end-1])
@@ -234,8 +233,6 @@ function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}},bounda
 
         nextnode = boundary[ii+1]
         idx = findone(x-> x==nextnode,htree[activenode])
-        
-        labels = Dict(Pair(nextnode,'1'))
 
         num_neighbors = length(htree[activenode])
 
@@ -245,58 +242,108 @@ function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}},bounda
             if htree[activenode][idx] == lastnode
                 sym = '0'
             else
+                push!(OZ, Pair(htree[activenode][idx],sym))
                 #go down the rabbit hole
                 keyvalue = component(removenode(htree,activenode),htree[activenode][idx])
                 for child in push!(keyvalue[2],keyvalue[1])
-                    innerlabels = Dict()
-                    for neighb in htree[child]
-                        push!(innerlabels,Pair(neighb,sym))
-                    end
-                    push!(OZ,Pair(child,innerlabels))
+                    push!(OZ,Pair(child,sym))
                 end
             end
-            push!(labels, Pair(htree[activenode][idx],sym))
             idx = mod1(idx+1,num_neighbors)
         end
-        push!(OZ,Pair(activenode,labels))
         lastnode = activenode
         activenode = nextnode
     end
-
-    #We now do the last node manually. It is a leaf, so has only one neighbor
-    neb = first(htree[boundary[end]])
-    push!(OZ,Pair(boundary[end],Dict([Pair(neb,'0')])))
             
     return OZ
 end
 
+#Messy because of if statement to distinguish the leaf case
 function anglesof((htree,boundary),node)
-    OZtree = labelonezero(htree,boundary)
+    OZ = labelonezero(htree,boundary)
     
-    neighbors = collect(htree[node])
-    angles = [Char[] for x in neighbors]
-
-    visited = []
-    while !(node in visited)
-        push!(visited,node)
-        for (ii, neighb) in enumerate(neighbors)
-            push!(angles[ii],OZtree[node][neighb])
+    if length(collect(htree[node])) > 1
+        initialneighbors = collect(htree[node])
+        neighbors = copy(initialneighbors)
+        angles = [Char[] for x in neighbors]
+        visited = []
+        while !((node in visited) && neighbors == initialneighbors) || isempty(visited)
+            push!(visited,node)
+            if OZ[node] == '*' #We are on the boundary and need to use neighbor info
+                for (ii, neighb) in enumerate(neighbors)
+                    if OZ[neighb] == '*'
+                        #Are we before or after the node on the boundary?
+                        nodeidx = findone(x->x==node,boundary)
+                        neighbidx = findone(x->x==neighb,boundary)
+                        if nodeidx > neighbidx
+                            push!(angles[ii],'0')
+                        else
+                            push!(angles[ii],'1')
+                        end
+                    else
+                        push!(angles[ii],OZ[neighb])
+                    end
+                end
+            else #We are not on the boundary and need no neighbor info
+                for angle in angles
+                    push!(angle,OZ[node])
+                end
+            end
+            node = shift(node)
+            for (ii, neighb) in enumerate(neighbors)
+                neighbors[ii] = neighbortowards(htree,node,shift(neighb))
+            end
         end
-        node = shift(node)
-        for (ii, neighb) in enumerate(neighbors)
-            neighbors[ii] = neighbortowards(htree,node,shift(neighb))
+        thetas = [Sequence{Char}(digits,node.preperiod) for digits in angles]
+        return thetas
+    else #We are on a leaf
+        initialneighb = first(collect(htree[node]))
+        neighb = initialneighb
+        angles = [Char[] for x in 1:2]
+        visited = []
+        while !((node in visited) && neighb == initialneighb) || isempty(visited)
+            push!(visited,node)
+            if OZ[node] == '*' #We are on the boundary and need to use neighbor info
+                for ii in 1:2
+                    if OZ[neighb] == '*'
+                        #Are we before or after the node on the boundary?
+                        nodeidx = findone(x->x==node,boundary)
+                        neighbidx = findone(x->x==neighb,boundary)
+                        if nodeidx > neighbidx 
+                            if ii == 1
+                                push!(angles[ii],'0')
+                            else
+                                push!(angles[ii],'1')
+                            end
+                        else
+                            if ii == 1
+                                push!(angles[ii],'1')
+                            else
+                                push!(angles[ii],'0')
+                            end
+                        end
+                    else
+                        push!(angles[ii],OZ[neighb])
+                    end
+                end
+            else #We are not on the boundary and need no neighbor info
+                for angle in angles
+                    push!(angle,OZ[node])
+                end
+            end
+            node = shift(node)
+            neighb = neighbortowards(htree,node,shift(neighb))
         end
+        thetas = [Sequence{Char}(digits,node.preperiod) for digits in angles]
+        return thetas
     end
-
-    thetas = [Sequence{Char}(digits,node.preperiod) for digits in angles]
-    return thetas
 end
 
 function angle_echo(theta::Rational)
     aia = AngledInternalAddress(theta)
     K = kneadingsequence(theta)
     H = embed(aia)
-    return [angleof(t) for t in anglesof(H,K)]
+    return sort([angleof(t) for t in anglesof(H,K)])
 end
 
 function valid_binary(theta)

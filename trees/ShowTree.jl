@@ -76,7 +76,7 @@ function showadjlist(E,root,labels,nodecolors=[])
 end
 
 
-function drawtree(H::Dict) 
+function showtree(H::Dict) 
     (E,nodes) = adjlist(H)
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
     
@@ -97,7 +97,7 @@ function drawtree(H::Dict)
     return showadjlist(E,rootindex,labels)
 end
 
-function drawtree(H::Dict,OZ,boundary) 
+function showtree(H::Dict,OZ) 
     (E,nodes) = adjlist(H)
     #We need to make colorlist and edge color matrix here
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
@@ -106,37 +106,29 @@ function drawtree(H::Dict,OZ,boundary)
     
     labels = []
     nodecolors = []
-    zeroindex = findone(x->x.items[1] == '*',boundary)
     for node in nodes
-        if node in boundary
-            #determine if it is before, after, or equal to zero
-            nodeindex = findone(x->x == node,boundary)
-            if nodeindex < zeroindex #then we are in region B
-                push!(nodecolors,"orangered2")
-            elseif nodeindex == zeroindex #then this is zero
-                push!(nodecolors,"black")
-            else #then we are in region A
+        firstchar = node.items[1]
+        if firstchar == '*'
+            push!(nodecolors,"black")
+        elseif firstchar == 'A' #we are fully in one of the 4 regions
+            if OZ[node] == '0'
+                push!(nodecolors,"blue")
+            elseif OZ[node] == '*'
                 push!(nodecolors,"turquoise")
+            elseif OZ[node] == '1'
+                push!(nodecolors,"green")
             end
-        else #we are fully in one of the 4 regions
-            neighb = H[node][1]
-            if node.items[1] == 'A'
-                if OZ[node][neighb] == '0'
-                    push!(nodecolors,"blue")
-                else
-                    push!(nodecolors,"green")
-                end
-            else
-                if OZ[node][neighb] == '0'
-                    push!(nodecolors,"red")
-                else
-                    push!(nodecolors,"orange")
-                end
+        elseif firstchar == 'B'
+            if OZ[node] == '0'
+                push!(nodecolors,"red")
+            elseif OZ[node] == '*'
+                push!(nodecolors,"orangered2")
+            elseif OZ[node] == '1'
+                push!(nodecolors,"orange")
             end
         end
     end
 
-    
     for node in nodes
         idx = findall(x->x==node, criticalorbit.items)
         if isempty(idx)
@@ -150,13 +142,13 @@ function drawtree(H::Dict,OZ,boundary)
     return showadjlist(E,rootindex,labels,nodecolors)
 end
 
-function drawtree(angle::Rational)
+function showtree(angle::Rational)
     (OH,b) = embed(AngledInternalAddress(angle))
     OZ = labelonezero(OH,b)
-    return drawtree(OH,OZ,b)
+    return showtree(OH,OZ)
 end
 
-function drawtree(K::Sequence)
-    return drawtree(hubbardtree(K))
+function showtree(K::Sequence)
+    return showtree(hubbardtree(K))
 end
 
