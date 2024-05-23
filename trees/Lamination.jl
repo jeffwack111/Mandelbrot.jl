@@ -26,7 +26,7 @@ function ==(x::Leaf,y::Leaf)
     return x.a==y.a && x.b==y.b
 end
 
-function plot_leaf!(leaf::Leaf,color)
+function plot_leaf!(ax,leaf::Leaf,color = "black")
     a = leaf.a
     b = leaf.b
     θ = (a+b)/2
@@ -65,7 +65,7 @@ function orbit(leaf::Leaf)
 
     preperiod = findall(x->x==leaf,items)[1] - 1
 
-    return Sequence(items,preperiod)
+    return Sequence{Leaf}(items,preperiod)
     
 end
 
@@ -114,12 +114,12 @@ function show_lamination(alpha)
     hidedecorations!(ax)
 
     arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
-    L = lamination(alpha)
+    L = saturation(alpha)
     C = colorschemes[:southwest].colors
     for G in enumerate(L)
         color = C[G[1]]
         for leaf in G[2]
-            plot_leaf!(leaf,color)
+            plot_leaf!(ax,leaf,color)
         end
     end
     return f
@@ -195,7 +195,7 @@ function hubbardtree(angle::Rational)
     hidedecorations!(ax)
     arc!(Point2f(0.0,0.0), 1.0, 0.0, 2*π, color=:black)
     for (ii,L) in enumerate(orb.items)
-        plot_leaf!(L,C[mod1(ii,10)])
+        plot_leaf!(ax,L,C[mod1(ii,10)])
     end
 
     return f
@@ -205,6 +205,9 @@ function periodiclamination(alpha::Rational)
     beta = conjugate(alpha)
 
     m = Leaf(alpha,beta)
+
+    c1 = critical_leaf(alpha)
+    c2 = critical_leaf(beta)
 
     orb = orbit(m)
 
@@ -219,11 +222,23 @@ function periodiclamination(alpha::Rational)
     n = period(orb)
 
     for (j,leaf) in enumerate(orb.items)
-        plot_leaf!(leaf,get(ColorSchemes.rainbow, float(j)/float(n)))
+        plot_leaf!(ax,leaf,get(ColorSchemes.rainbow, float(j)/float(n)))
     end
+
+    plot_leaf!(ax,c1)
+    plot_leaf!(ax,c2)
+
     return f
 end
 
 function leaflength(theta::Rational)
     return abs(theta - conjugate(theta))
+end
+
+function minorleaf(theta::Rational)
+    return Leaf(theta,conjugate(theta))
+end
+
+function critical_leaf(theta)
+    return Leaf(theta/(2//1),((theta+1//1)/(2//1))%(1//1))
 end

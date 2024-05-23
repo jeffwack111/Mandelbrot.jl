@@ -6,7 +6,7 @@ function adjlist(graph::Dict)
     for node in nodes
         g = []
         for neighbor in graph[node]
-            push!(g,findall(x->x==neighbor, nodes)[1])
+            push!(g,findone(x->x==neighbor, nodes))
         end
         push!(E,g)
     end

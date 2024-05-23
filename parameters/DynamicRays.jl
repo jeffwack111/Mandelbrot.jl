@@ -45,7 +45,7 @@ function dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
             end     
         end
     end
-    return rays
+    return Dict([Pair(angle,ray) for (angle,ray) in zip(orb.items,rays.items)])
 end
 
 

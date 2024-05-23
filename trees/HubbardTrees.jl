@@ -60,10 +60,6 @@ function addsequence(Htree,new)
     return addsequence(Htree,K,(Z,deepcopy(Htree[Z])),new)
 end
 
-function hubbardtree(angle::Rational)
-    return embed(angle)
-end
-
 function hubbardtree(internaladdress::Vector{Int})
     K = kneadingsequence(internaladdress)
     seq = copy(K.items)

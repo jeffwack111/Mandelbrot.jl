@@ -1,10 +1,52 @@
 using CairoMakie
 include("HubbardTrees.jl")
-include("EmbedTrees.jl")
+include("OrientTrees.jl")
 
-function showadjlist(E,root,labels,nodecolors=[])
+function showadjlist(E,root,labels,nodecolors=[],pos=[])
+
+    if isempty(pos)
+        pos = generationposition(E,root)
+    end
+    
+    f = Figure()
+
+    ax1 = Axis(f[1, 1],aspect = 1, limits = (0,1,0,1))
+    hidedecorations!(ax1)
+    hidespines!(ax1)
+
+    colorsforinterior = ["red","blue","green","orange"]
+
+    for (ii,p) in enumerate(E)
+        for n in p
+            if isempty(nodecolors)
+                lines!([pos[ii],pos[n]])
+            else
+                if nodecolors[ii] in colorsforinterior 
+                    lines!([pos[ii],pos[n]],color = nodecolors[ii])
+                elseif nodecolors[n] in colorsforinterior
+                    lines!([pos[ii],pos[n]],color = nodecolors[n])
+                elseif nodecolors[ii] !== "black" 
+                    lines!([pos[ii],pos[n]],color = nodecolors[ii])
+                elseif nodecolors[n] !== "black" 
+                    lines!([pos[ii],pos[n]],color = nodecolors[n])
+                end
+            end
+        end
+    end
+    if isempty(nodecolors)
+        scatter!(pos)
+    else
+        scatter!(pos,color = nodecolors)
+    end
+    tex = [node[2] for node in labels]
+    text!(pos,text = tex)
+    
+    return f
+end
+
+function generationposition(E,root)
     T = [[root],E[root]]
- 
+    
     nadded = 1 + length(T[2])
     n = length(E)
 
@@ -35,50 +77,18 @@ function showadjlist(E,root,labels,nodecolors=[])
             Y[u] = 1 - gen/(Ngens+1)
         end
     end
-    pos = Point.(X,Y)
-    
-    f = Figure()
 
-    ax1 = Axis(f[1, 1],aspect = 1, limits = (0,1,0,1))
-    hidedecorations!(ax1)
-    hidespines!(ax1)
-
-    for (ii,p) in enumerate(E)
-        for n in p
-            if isempty(nodecolors)
-                lines!([pos[ii],pos[n]])
-            else
-                if nodecolors[ii] == "red" || nodecolors[n] == "red"
-                    lines!([pos[ii],pos[n]],color = "red")
-                elseif nodecolors[ii] == "blue" || nodecolors[n] == "blue"
-                    lines!([pos[ii],pos[n]],color = "blue")
-                elseif nodecolors[ii] == "orange" || nodecolors[n] == "orange"
-                    lines!([pos[ii],pos[n]],color = "orange")
-                elseif nodecolors[ii] == "green" || nodecolors[n] == "green"
-                    lines!([pos[ii],pos[n]],color = "green")
-                elseif nodecolors[ii] == "orangered2" || nodecolors[n] == "orangered2"
-                    lines!([pos[ii],pos[n]],color = "orangered2")
-                elseif nodecolors[ii] == "turquoise" || nodecolors[n] == "turquoise"
-                    lines!([pos[ii],pos[n]],color = "turquoise")
-                end
-            end
-        end
-    end
-    if isempty(nodecolors)
-        scatter!(pos)
-    else
-        scatter!(pos,color = nodecolors)
-    end
-    tex = [node[2] for node in labels]
-    text!(pos,text = tex)
-    
-    return f
+    return Point.(X,Y)
 end
 
-
-function showtree(H::Dict) 
+function showtree(H::Dict)
     (E,nodes) = adjlist(H)
-    root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
+    return showtree(E,nodes)
+end
+
+function showtree(E,nodes) 
+    
+    root = filter(x->x.items[1]=='*',nodes)[1]
     
     criticalorbit = orbit(root)
     
@@ -97,8 +107,13 @@ function showtree(H::Dict)
     return showadjlist(E,rootindex,labels)
 end
 
-function showtree(H::Dict,OZ) 
+function showtree(H::Dict,OZ)
     (E,nodes) = adjlist(H)
+    return showtree(H,(E,nodes),OZ)
+end
+
+function showtree(H::Dict,(E,nodes),OZ,pos) 
+    
     #We need to make colorlist and edge color matrix here
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
     
@@ -139,7 +154,7 @@ function showtree(H::Dict,OZ)
     end
 
     rootindex = findall(x->x==root,nodes)[1]
-    return showadjlist(E,rootindex,labels,nodecolors)
+    return showadjlist(E,rootindex,labels,nodecolors,pos)
 end
 
 function showtree(angle::Rational)
