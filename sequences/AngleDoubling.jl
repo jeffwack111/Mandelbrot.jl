@@ -119,7 +119,7 @@ function angleof(binary::Sequence)
     r = 1//(1//1-(2//1)^-k)
     for (ii,digit) in enumerate(binary.items)
         if digit=='1' 
-            if  ii<binary.preperiod
+            if  ii<=binary.preperiod
                 theta += (2//1)^(-ii)
             else 
                 theta += r*(2//1)^(-ii)

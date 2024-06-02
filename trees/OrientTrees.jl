@@ -294,13 +294,17 @@ function oneangleof(OZ,htree,boundary,node)
     return theta
 end
 
-function anglesof(OZ,htree,boundary,node)
+function anglesofbranch(OZ,htree,boundary,node)
+    l = node.preperiod
     initialneighbors = collect(htree[node])
+    if length(initialneighbors) < 3
+        error("$node is not a branch point")
+    end
     neighbors = copy(initialneighbors)
     angles = [Char[] for x in neighbors]
     visited = []
-    while !((node in visited) && neighbors == initialneighbors) || isempty(visited)
-        push!(visited,node)
+    while !((node,neighbors) in visited) || isempty(visited)
+        push!(visited,(node,copy(neighbors)))
         if OZ[node] == '*' #We are on the boundary and need to use neighbor info
             for (ii, neighb) in enumerate(neighbors)
                 if OZ[neighb] == '*'
@@ -321,20 +325,17 @@ function anglesof(OZ,htree,boundary,node)
                 push!(angle,OZ[node])
             end
         end
+        
         node = shift(node)
         for (ii, neighb) in enumerate(neighbors)
             neighbors[ii] = neighbortowards(htree,node,shift(neighb))
         end
     end
-    thetadigits = [Sequence{Char}(digits,node.preperiod) for digits in angles]
-    thetas = sort([angleof(t) for t in thetadigits])
+    thetas = [Sequence{Char}(digits,l) for digits in angles]
     return thetas
 end
 
-function anglesof(aia::AngledInternalAddress)
-    H,boundary = orientedtree(aia)
-    OZ = labelonezero(H,boundary)
-
+function criticalanglesof(OZ,H,boundary)
     zero = first(filter(x->x.items[1]=='*',keys(H)))
     node = shift(zero)
 
@@ -376,9 +377,55 @@ function anglesof(aia::AngledInternalAddress)
         neighb = neighbortowards(H,node,shift(neighb))
     end
     thetadigits = [Sequence{Char}(digits,node.preperiod) for digits in angles]
-    thetas = sort([angleof(t) for t in thetadigits])
-    return thetas
+    return thetadigits
 end
+
+function allanglesof(OZ,H,boundary)
+    #first we do the critical orbit
+    pairs = Dict()
+
+    
+    zero = first(filter(x->x.items[1]=='*',keys(H)))
+    seq = shift(zero)
+
+    angles = criticalanglesof(OZ,H,boundary)
+    while !(seq in keys(pairs))
+        push!(pairs,Pair(seq,angles))
+        seq = shift(seq)
+        angles = [shift(angle) for angle in angles]
+    end
+
+    #next we do the periodic orbits
+    for c in characteristicset(H)
+        angles = anglesofbranch(OZ,H,boundary,c)
+        seq = c
+        while !(seq in keys(pairs))
+            push!(pairs,Pair(seq,angles))
+            seq = shift(seq)
+            angles = [shift(angle) for angle in angles]
+        end
+    end
+
+    push!(pairs,Pair(Sequence("B",0),[Sequence("0",0)]))
+    push!(pairs,Pair(Sequence("AB",1),[Sequence("10",1)]))
+
+    #last we do the preperiodic branch points. This is slow!
+    for node in keys(H)
+        if !(node in keys(pairs))
+            push!(pairs,Pair(node,anglesofbranch(OZ,H,boundary,node)))
+        end
+    end
+
+    return pairs
+end
+
+function allanglesof(theta::Rational)
+    (H,B) = orientedtree(theta)
+    OZ = labelonezero(H,B)
+    return allanglesof(OZ,H,B)
+end
+
+
 
 function angle_echo(theta::Rational)
     aia = AngledInternalAddress(theta)

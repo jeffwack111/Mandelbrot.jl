@@ -6,57 +6,69 @@ include("../trees/ShowTree.jl")
 
 function characteristicrays(theta::Rational) 
 
-    
-
     (OrientedHubbardTree,Boundary) = orientedtree(theta)
-    (EdgeList,Nodes) = adjlist(OrientedHubbardTree)
-    CharacterOrbs= characteristicorbits(OrientedHubbardTree)
+
     OZ = labelonezero(OrientedHubbardTree,Boundary)
 
-    angles = [oneangleof(OZ,OrientedHubbardTree,Boundary,node) for node in keys(CharacterOrbs)]
+    anglelist = allanglesof(OZ,OrientedHubbardTree,Boundary)
 
-    n = period(theta)
+    (EdgeList,Nodes) = adjlist(OrientedHubbardTree)
+    
+
+
     c = spideriterate(theta,100)
+    
+    
+    #critical orbit
+    rays = dynamicrays(c,theta,100,10,20)
+    merge!(rays,dynamicrays(c,conjugate(theta),100,10,20))
+
+    #periodic branch points
+    characteristicpoints = characteristicset(OrientedHubbardTree)
+    for point in characteristicpoints
+        merge!(rays,dynamicrays(c,angleof(first(anglelist[point])),100,10,20))
+    end
+
+    merge!(rays,dynamicrays(c,1//2,100,10,20))
+    merge!(rays,dynamicrays(c,0//1,100,10,20))
+
+    #preperiod branch points. This is slow!
+    for node in Nodes
+        for angle in anglelist[node]
+            if !(angle in keys(rays))
+                theta = angleof(angle)
+                push!(rays,Pair(theta,dynamicrays(c,theta,100,10,20)[theta]))
+            end
+        end
+    end
+
     orbit = [0.0+0.0im]
+    n = period(theta)
     for ii in 1:n-1
         push!(orbit,orbit[end]^2+c)
     end
-    
-    thetaprime = conjugate(theta)
 
-    rays = dynamicrays(c,theta,100,10,20)
-    conjrays = dynamicrays(c,thetaprime,100,10,20)
-
-    branchrays = Dict()
-
-    for branchangle in angles
-        merge!(branchrays,dynamicrays(c,branchangle,100,10,20))
+    zvalues = []
+    for node in Nodes
+        if '*' in node.items #then it is in the critical orbit
+            idx = findone(x->x=='*',node.items)
+            push!(zvalues,orbit[mod1(n-idx+2,n)])
+        else
+            list = [rays[angleof(angle)][end] for angle in anglelist[node]]
+            push!(zvalues,sum(list)/length(list))
+        end
     end
 
-    raydict = merge(branchrays,rays,conjrays)
-    
-    println("a")
-    anglelist = [anglesof(OZ,OrientedHubbardTree,Boundary,node) for node in Nodes]
-    println("b")
-    zvalues = [sum([raydict[angle][end] for angle in list])/length(list) for list in anglelist]
-
     pos = Point.(real.(zvalues),imag.(zvalues))
+ 
+    (fig,ax) = showtree(OrientedHubbardTree,(EdgeList,Nodes),OZ,pos)
 
-    
-    julia = inverseiterate(c,22)
-
-    fig = showtree(OrientedHubbardTree,(EdgeList,Nodes),OZ,pos)
-    ax = Axis(fig[1, 1],aspect = 1)
-    r = 2
-    xlims!(-r,r)
-    ylims!(-r,r)
-    hidedecorations!(ax)
-    #hidespines!(ax)
-
-    onlyrays = [pair[2] for pair in raydict]
+    onlyrays = [pair[2] for pair in rays]
     plotrays!(ax,onlyrays)
 
+    julia = inverseiterate(c,22)
     scatter!(ax,real(julia),imag(julia),markersize = 1,color = "black")
+    
     #scatter!(ax,real(orbit),imag(orbit))
 
     return fig

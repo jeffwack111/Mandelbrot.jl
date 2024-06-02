@@ -83,5 +83,5 @@ function plotrays(rays::Vector{Vector{ComplexF64}})
 end
 
 function plotrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
-    return plotrays(newdynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int).items)
+    return plotrays(collect(values(dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int))))
 end

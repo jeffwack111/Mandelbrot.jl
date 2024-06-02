@@ -4,13 +4,16 @@ include("OrientTrees.jl")
 
 function showadjlist(E,root,labels,nodecolors=[],pos=[])
 
-    if isempty(pos)
-        pos = generationposition(E,root)
-    end
-    
     f = Figure()
 
-    ax1 = Axis(f[1, 1],aspect = 1, limits = (0,1,0,1))
+    if isempty(pos)
+        pos = generationposition(E,root)
+        ax1 = Axis(f[1, 1],aspect = 1, limits = (0,1,0,1))
+    else
+        ax1 = Axis(f[1, 1],aspect = 1, limits = (-2,2,-2,2))
+    end
+
+
     hidedecorations!(ax1)
     hidespines!(ax1)
 
@@ -33,7 +36,7 @@ function showadjlist(E,root,labels,nodecolors=[],pos=[])
             end
         end
     end
-    if isempty(nodecolors)
+    if isempty(nodecolors) 
         scatter!(pos)
     else
         scatter!(pos,color = nodecolors)
@@ -41,7 +44,7 @@ function showadjlist(E,root,labels,nodecolors=[],pos=[])
     tex = [node[2] for node in labels]
     text!(pos,text = tex)
     
-    return f
+    return f,ax1
 end
 
 function generationposition(E,root)
