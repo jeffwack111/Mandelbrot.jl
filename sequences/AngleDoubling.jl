@@ -27,9 +27,17 @@ end
 
 function firstaddress(intadd::Vector{Int})
     d = denominators(intadd)
-    angles = [1//d for d in denominators]
+    angles = [1//x for x in d]
     return AngledInternalAddress(intadd,angles)
 end
+
+function bifurcate(aia::AngledInternalAddress)
+    intadd = copy(aia.addr)
+    intadd = append!(intadd,intadd[end]*2//1)
+    angles = append!(copy(aia.angles),1//2)
+    return AngledInternalAddress(intadd, angles)
+end
+
 
 function nextaddress(AIA::AngledInternalAddress)
     #give the next valid internal address, going counterclockwise
@@ -47,6 +55,19 @@ function orbit(angle::Rational)
     preperiod = findall(x->x==angle,items)[1] - 1
 
     return Sequence{Rational}(items,preperiod)
+    
+end
+
+function orbit(a::Vector{Rational{Int}})
+    items = Vector{Rational}[]
+    while isempty(findall(x->x==a,items))
+        push!(items,a)
+        a = [(angle*2)%1//1 for angle in a]
+    end
+
+    preperiod = findall(x->x==a,items)[1] - 1
+
+    return Sequence{Vector{Rational}}(items,preperiod)
     
 end
 

@@ -75,12 +75,16 @@ function characteristicset(tree::Dict)
     return C
 end
 
+function characteristicorbits(H)
+    P = preimages(H)
+    return Dict([Pair(c, Dict([Pair(x,P[x]) for x in component(P,c)[2]])) for c in characteristicset(H)])
+end
+
 function orientedtree(AIA::AngledInternalAddress)
     H = hubbardtree(AIA.addr)
 
     (H,boundary) = addboundary(H)
 
-    charpoints = characteristicset(H)
     nums = Int[]
     for angle in AIA.angles
         if denominator(angle) > 2
@@ -90,8 +94,10 @@ function orientedtree(AIA::AngledInternalAddress)
 
     orientedH = Dict{Sequence{Char}, Vector{Sequence{Char}}}()
 
-    for (node, num) in zip(charpoints,nums)
-        merge!(orientedH,orientpreimages(H,orientcharacteristic(H, node,num)))
+    charorbits = characteristicorbits(H)
+
+    for (node, num) in zip(charorbits,nums)
+        merge!(orientedH,orientpreimages(H,node[2],orientcharacteristic(H, node[1],num)))
     end
 
     #Deal with the critical orbit
@@ -163,8 +169,7 @@ function orientcharacteristic(H,node,num)
     return Pair(node,oriented)
 end
 
-function orientpreimages(H,target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
-    P = preimages(H)
+function orientpreimages(H,P,target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
     keyvaluepairs = Dict(target)
     activetargets = [target[1]]
     while !isempty(activetargets)
@@ -257,84 +262,68 @@ function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}},bounda
     return OZ
 end
 
-function anglesof((htree,boundary),node)
-    OZ = labelonezero(htree,boundary)
-    return anglesof(OZ,(htree,boundary),node)
+function oneangleof(OZ,htree,boundary,node)
+    #First, we will calculate any angle of the characteristic point
+    initialneighbor = first(htree[node])
+    neighbor = initialneighbor
+    angle = Char[]
+    visited = []
+    while !((node in visited) && neighbor == initialneighbor) || isempty(visited)
+        push!(visited,node)
+        if OZ[node] == '*' #We are on the boundary and need to use neighbor info
+            if OZ[neighbor] == '*'
+                #Are we before or after the node on the boundary?
+                nodeidx = findone(x->x==node,boundary)
+                neighbidx = findone(x->x==neighbor,boundary)
+                if nodeidx > neighbidx
+                    push!(angle,'0')
+                else
+                    push!(angle,'1')
+                end
+            else
+                push!(angle,OZ[neighbor])
+            end
+        else #We are not on the boundary and need no neighbor info
+            push!(angle,OZ[node])
+        end
+        node = shift(node)
+        neighbor = neighbortowards(htree,node,shift(neighbor))
+    end
+    thetadigits = Sequence{Char}(angle,node.preperiod)
+    theta = angleof(thetadigits)
+    return theta
 end
 
-#Depreciated. Make a function that calculates the angles of all the branch points of a tree 
-#Importantly, this function will already know the angle of the tree
-function anglesof(OZ,(htree,boundary),node)
-   
-    if length(collect(htree[node])) > 1
-        initialneighbors = collect(htree[node])
-        neighbors = copy(initialneighbors)
-        angles = [Char[] for x in neighbors]
-        visited = []
-        while !((node in visited) && neighbors == initialneighbors) || isempty(visited)
-            push!(visited,node)
-            if OZ[node] == '*' #We are on the boundary and need to use neighbor info
-                for (ii, neighb) in enumerate(neighbors)
-                    if OZ[neighb] == '*'
-                        #Are we before or after the node on the boundary?
-                        nodeidx = findone(x->x==node,boundary)
-                        neighbidx = findone(x->x==neighb,boundary)
-                        if nodeidx > neighbidx
-                            push!(angles[ii],'0')
-                        else
-                            push!(angles[ii],'1')
-                        end
+function anglesof(OZ,htree,boundary,node)
+    initialneighbors = collect(htree[node])
+    neighbors = copy(initialneighbors)
+    angles = [Char[] for x in neighbors]
+    visited = []
+    while !((node in visited) && neighbors == initialneighbors) || isempty(visited)
+        push!(visited,node)
+        if OZ[node] == '*' #We are on the boundary and need to use neighbor info
+            for (ii, neighb) in enumerate(neighbors)
+                if OZ[neighb] == '*'
+                    #Are we before or after the node on the boundary?
+                    nodeidx = findone(x->x==node,boundary)
+                    neighbidx = findone(x->x==neighb,boundary)
+                    if nodeidx > neighbidx
+                        push!(angles[ii],'0')
                     else
-                        push!(angles[ii],OZ[neighb])
+                        push!(angles[ii],'1')
                     end
-                end
-            else #We are not on the boundary and need no neighbor info
-                for angle in angles
-                    push!(angle,OZ[node])
+                else
+                    push!(angles[ii],OZ[neighb])
                 end
             end
-            node = shift(node)
-            for (ii, neighb) in enumerate(neighbors)
-                neighbors[ii] = neighbortowards(htree,node,shift(neighb))
+        else #We are not on the boundary and need no neighbor info
+            for angle in angles
+                push!(angle,OZ[node])
             end
         end
-    else #We are on a leaf
-        initialneighb = first(collect(htree[node]))
-        neighb = initialneighb
-        angles = [Char[] for x in 1:2]
-        visited = []
-        while !((node in visited) && neighb == initialneighb) || isempty(visited)
-            push!(visited,node)
-            if OZ[node] == '*' #We are on the boundary and need to use neighbor info
-                for ii in 1:2
-                    if OZ[neighb] == '*'
-                        #Are we before or after the node on the boundary?
-                        nodeidx = findone(x->x==node,boundary)
-                        neighbidx = findone(x->x==neighb,boundary)
-                        if nodeidx > neighbidx 
-                            if ii == 1
-                                push!(angles[ii],'0')
-                            else
-                                push!(angles[ii],'1')
-                            end
-                        else
-                            if ii == 1
-                                push!(angles[ii],'1')
-                            else
-                                push!(angles[ii],'0')
-                            end
-                        end
-                    else
-                        push!(angles[ii],OZ[neighb])
-                    end
-                end
-            else #We are not on the boundary and need no neighbor info
-                for angle in angles
-                    push!(angle,OZ[node])
-                end
-            end
-            node = shift(node)
-            neighb = neighbortowards(htree,node,shift(neighb))
+        node = shift(node)
+        for (ii, neighb) in enumerate(neighbors)
+            neighbors[ii] = neighbortowards(htree,node,shift(neighb))
         end
     end
     thetadigits = [Sequence{Char}(digits,node.preperiod) for digits in angles]
@@ -353,7 +342,7 @@ function anglesof(aia::AngledInternalAddress)
     neighb = initialneighb
     angles = [Char[] for x in 1:2]
     visited = []
-    while !((node in visited) && neighb == initialneighb) || isempty(visited)
+    while !(node in visited)
         push!(visited,node)
         if OZ[node] == '*' #We are on the boundary and need to use neighbor info
             for ii in 1:2
@@ -402,6 +391,7 @@ function valid_binary(theta)
     H = orientedtree(aia)
     return binary(theta) in anglesof(H,K)
 end
+
 
 
 

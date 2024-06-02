@@ -112,7 +112,7 @@ function showtree(H::Dict,OZ)
     return showtree(H,(E,nodes),OZ)
 end
 
-function showtree(H::Dict,(E,nodes),OZ,pos) 
+function showtree(H::Dict,(E,nodes),OZ,pos=[]) 
     
     #We need to make colorlist and edge color matrix here
     root = filter(x->x.items[1]=='*',collect(keys(H)))[1]
@@ -158,7 +158,7 @@ function showtree(H::Dict,(E,nodes),OZ,pos)
 end
 
 function showtree(angle::Rational)
-    (OH,b) = embed(AngledInternalAddress(angle))
+    (OH,b) = orientedtree(AngledInternalAddress(angle))
     OZ = labelonezero(OH,b)
     return showtree(OH,OZ)
 end

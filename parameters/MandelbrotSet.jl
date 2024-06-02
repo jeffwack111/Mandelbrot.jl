@@ -1,6 +1,6 @@
 include("RenderFractal.jl")
 include("../spiders/Spiders.jl")
-include("../trees/HubbardTrees.jl")
+include("../trees/OrientTrees.jl")
 using ColorSchemes 
 
 function mandelbrotpatch(A::Complex, B::Complex, scale::Real)
@@ -32,20 +32,13 @@ function showmandelbrot((A, B), scale::Real)
     return heatmap(pic,nan_color = RGBAf(0,0,0,1),colormap = :PRGn_9)
 end
 
-function showm(intadd::Vector{Int},numerators)
-    head = push!(copy(intadd),2*intadd[end])
-
-    @time theta1 = angleof(binary(hubbardtree(intadd),numerators))
-    println(theta1)
-    @time theta2 = angleof(binary(hubbardtree(head),numerators))
-    println(theta2)
-
-    @time c1 = spideriterate(theta1,500)
+function showm(angle1::Rational,angle2::Rational)
+    @time c1 = spideriterate(angle1,500)
     println(c1)
-    @time c2 = spideriterate(theta2,500)
+    @time c2 = spideriterate(angle2,500)
     println(c2)
 
-    M = mandelbrotpatch(c1,c2,3)
+    M = mandelbrotpatch(c1,c2,10)
     PA = mproblem_array(M,escape(100),500)
 
     fig = Figure()
@@ -59,70 +52,26 @@ function showm(intadd::Vector{Int},numerators)
     return scene
 end
 
-function showm(intadd::Vector{Int})
-    n = length(characteristicpoints(hubbardtree(intadd)))
-    nums = fill(1,n)
-    return showm(intadd,nums)
+
+function showm(aia::AngledInternalAddress)
+    @time theta1 = first(anglesof(aia))
+    println(theta1)
+    @time theta2 = first(anglesof(bifurcate(aia)))
+    println(theta2)
+    return showm(theta1,theta2)
+end
+    
+function showm(theta::Rational)
+    aia = AngledInternalAddress(theta)
+    @time theta2 = first(anglesof(bifurcate(aia)))
+    println(theta2)
+    return showm(theta,theta2)
 end
 
-function movie(intaddlist::Vector{Vector{Int}})
-    for (ii,intadd) in enumerate(intaddlist)
-        save("frame$ii.png",showm(intadd))
+function movie(list)
+    for (ii,item) in enumerate(list)
+        save("frameb$ii.png",showm(item))
     end
-end
-
-function anglepairlist(n::Int)
-    list = []
-    for ii in 1:n
-        intadd = [1,2,2*(ii+2)]
-        head = [1,2,2*(ii+2),4*(ii+2)]
-        num = [1]
-        theta1 = angleof(binary(hubbardtree(intadd),num))
-        theta2 = angleof(binary(hubbardtree(head),num))
-        push!(list,(theta1,theta2))
-    end
-    return list
-end
-
-function anglepair(intadd::Vector{Int},numerators)
-    head = push!(copy(intadd),2*intadd[end])
-    theta1 = angleof(binary(hubbardtree(intadd),numerators))
-    theta2 = angleof(binary(hubbardtree(head),numerators))
-    return (theta1,theta2)
-end
-
-function parameterpair(angles)
-    c1 = spideriterate(angles[1],500)
-    c2 = spideriterate(angles[2],500)
-    return (c1,c2)
-end
-
-
-function oldmovie(frames::Int)
-
-    fig = Figure()
-    scene = Scene(camera=campixel!, resolution=(1000,1000))
-    ax = Axis(scene,aspect = 1)
-    hidedecorations!(ax)
-    hidespines!(ax)
-
-    record(scene,"test.gif",1:frames; framerate = 3) do ii
-        empty!(ax)
-        intadd = [1,2]
-        push!(intadd,(ii+1)*2+1)
-        theta1 = angleof(binary(hubbardtree(intadd),[1]))
-        head = copy(intadd)
-        push!(head,intadd[end]*2)
-        theta2 = angleof(binary(hubbardtree(head),[1]))
-
-        c1 = spideriterate(theta1,100+50*ii)
-        c2 = spideriterate(theta2,100+50*ii)
-
-        M = mandelbrotpatch(c1,c2,50)
-        PA = mproblem_array(M,escape(10000),500)
-        heatmap!(scene,mod.(escapetime.(PA),50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
-
-    end 
 end
 
 function overlay(maxiter::Int)
