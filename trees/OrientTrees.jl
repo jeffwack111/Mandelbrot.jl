@@ -1,5 +1,11 @@
 include("HubbardTrees.jl")
 
+struct OrientedHubbardTree <: AbstractHubbardTree
+    zero::Sequence
+    adj::Dict{Sequence,Vector{Sequence}}
+    boundary::Vector{Sequence}
+end
+
 function forwardimages(htree::Dict)
     return Dict([Pair(key,[shift(key)]) for key in keys(htree)])
 end 
@@ -30,20 +36,20 @@ end
 #Then there are a unique point z ∈ {zk}n k=1 and two different components of T \ {z}
 #such that the critical value is contained in one component and 0 and all other points
 #zk not= z are in the other one
-function ischaracteristic(htree,periodicpoint)
-    glarms = globalarms(htree,periodicpoint)
+function ischaracteristic(htree::AbstractHubbardTree,periodicpoint)
+    glarms = globalarms(htree.adj,periodicpoint)
 
     if length(collect(keys(glarms))) < 3
         return false
     end
 
-    forbit = forwardorbit(htree,periodicpoint)[2]
+    forbit = forwardorbit(htree.adj,periodicpoint)[2]
 
-    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+    zero = htree.zero
 
     won = shift(zero)
 
-    zarm = neighbortowards(htree,periodicpoint,zero)
+    zarm = neighbortowards(htree.adj,periodicpoint,zero)
 
     for point in forbit
         if point != periodicpoint && !(point in glarms[zarm])
@@ -63,25 +69,43 @@ end
 #This checks too many points with ischaracteristic. 
 #The orbits of the tree should be divided up first, 
 #then one characteristic point is found for each orbit
-function characteristicset(tree::Dict)
-    nodes = collect(keys(tree))
+function characteristicset(H::AbstractHubbardTree)
+    nodes = collect(keys(H.adj))
     periodicnodes = filter(x -> x.preperiod == 0 , nodes)
     C = Sequence{Char}[]
     for node in periodicnodes
-        if ischaracteristic(tree,node)
+        if ischaracteristic(H,node)
             push!(C,node)
         end
     end
-    return C
+    #before returning this vector we must put it in order from 0 to the critical point.
+    #This will result later in the correct numerators being matched up with the correct characteristic points
+    #There should be a single element of C which is between 0 and all the other elements
+    zero = H.zero
+    crit_value = shift(zero)
+    path = [zero]
+    node = zero
+    while node != crit_value
+        node = first(filter(x->isbetween(H.adj,x,crit_value,node),H.adj[node]))
+        push!(path,node)  
+    end
+    D = []
+    for node in path
+        if node in C
+            push!(D,node)
+        end
+    end
+
+    return D
 end
 
 function characteristicorbits(H)
-    P = preimages(H)
-    return Dict([Pair(c, Dict([Pair(x,P[x]) for x in component(P,c)[2]])) for c in characteristicset(H)])
+    P = preimages(H.adj)
+    return [Pair(c, Dict([Pair(x,P[x]) for x in component(P,c)[2]])) for c in characteristicset(H)]
 end
 
-function orientedtree(AIA::AngledInternalAddress)
-    H = hubbardtree(AIA.addr)
+function OrientedHubbardTree(AIA::AngledInternalAddress)
+    H = HubbardTree(AIA.addr)
 
     (H,boundary) = addboundary(H)
 
@@ -97,31 +121,31 @@ function orientedtree(AIA::AngledInternalAddress)
     charorbits = characteristicorbits(H)
 
     for (node, num) in zip(charorbits,nums)
-        merge!(orientedH,orientpreimages(H,node[2],orientcharacteristic(H, node[1],num)))
+        merge!(orientedH,orientpreimages(H.adj,node[2],orientcharacteristic(H, node[1],num)))
     end
 
     #Deal with the critical orbit
-    zero = first(filter(x->x.items[1]=='*',keys(H)))
+    zero = H.zero
     for node in orbit(zero).items
-        push!(orientedH,Pair(node,collect(H[node])))
+        push!(orientedH,Pair(node,collect(H.adj[node])))
     end
     
     mbeta = Sequence("AB",1)
     #deal with beta orbit
     for node in orbit(mbeta).items
-        push!(orientedH,Pair(node,collect(H[node])))
+        push!(orientedH,Pair(node,collect(H.adj[node])))
     end
 
     if orientedH[zero][1].items[1] == 'B'
         circshift!(orientedH[zero],1)
     end
 
-    return orientedH,boundary
+    return OrientedHubbardTree(zero,orientedH,boundary)
 
 end
 
-function orientedtree(angle::Rational)
-    return orientedtree(AngledInternalAddress(angle))
+function OrientedHubbardTree(angle::Rational)
+    return OrientedHubbardTree(AngledInternalAddress(angle))
 end
 
 function orientnode(H,source::Sequence{Char},target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
@@ -151,8 +175,8 @@ end
 
 #SKETCHY SKETCHY
 function orientcharacteristic(H,node,num)
-    glarms = globalarms(H,node)
-    zero = first(filter(x->x.items[1]=='*',keys(H)))
+    glarms = globalarms(H.adj,node)
+    zero = H.zero
     per = period(zero)
     c = shift(zero)
     q = length(glarms)
@@ -164,7 +188,7 @@ function orientcharacteristic(H,node,num)
     #1-n, 0%q
     #1,num%q
     #1+n,2*num
-    indexpairs = [Pair(neighbortowards(H,node,shiftby(c,per+n*x)),mod1(x*num,q)) for x in -1:(q-2)]
+    indexpairs = [Pair(neighbortowards(H.adj,node,shiftby(c,per+n*x)),mod1(x*num,q)) for x in -1:(q-2)]
     oriented = [x[1] for x in sort(indexpairs, by=z->z[2])]
     return Pair(node,oriented)
 end
@@ -199,25 +223,25 @@ function isbetween(htree::Dict,a,b,c)
     end
 end
 
-function addboundary(htree::Dict)
+function addboundary(htree::HubbardTree)
     beta = Sequence("B",0)
     mbeta = Sequence("AB",1)
-    H = addsequence(htree,beta)
-    H = addsequence(H,mbeta)
+    H = extend(htree,beta)
+    H = extend(H,mbeta)
     
     boundary = [beta]
     node = beta
     while node != mbeta
-        node = first(filter(x->isbetween(H,x,mbeta,node),H[node]))
+        node = first(filter(x->isbetween(H.adj,x,mbeta,node),H.adj[node]))
         push!(boundary,node)  
     end
 
     return (H,boundary)
 end
 
-function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}},boundary)
-
-    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+function labelonezero(OH::OrientedHubbardTree)
+    htree = OH.adj
+    zero = OH.zero
     K = shift(zero)
     
     #We now want to traverse the boundary, assigning 1s and 0s to the entire tree as we go.
@@ -225,7 +249,7 @@ function labelonezero(htree::Dict{Sequence{Char}, Vector{Sequence{Char}}},bounda
     #Heading to minus beta from beta, 0 is on the left and 1 is on the right.
     #As we head along, we have a boundary point behind us and a boundary point ahead of us. 
     #The neighbors which are counterclockwise of the point behind and clockwise of the point ahead are in region 0
-
+    boundary = OH.boundary
     OZ = Dict([Pair(node,'*') for node in boundary])
     lastnode = nothing
 
@@ -294,7 +318,9 @@ function oneangleof(OZ,htree,boundary,node)
     return theta
 end
 
-function anglesofbranch(OZ,htree,boundary,node)
+function anglesofbranch(OZ,OH,node)
+    htree = OH.adj
+    boundary = OH.boundary
     l = node.preperiod
     initialneighbors = collect(htree[node])
     if length(initialneighbors) < 3
@@ -335,9 +361,11 @@ function anglesofbranch(OZ,htree,boundary,node)
     return thetas
 end
 
-function criticalanglesof(OZ,H,boundary)
-    zero = first(filter(x->x.items[1]=='*',keys(H)))
+function criticalanglesof(OZ,OH)
+    H = OH.adj
+    zero = OH.zero
     node = shift(zero)
+    boundary = OH.boundary
 
     initialneighb = first(collect(H[node]))
     neighb = initialneighb
@@ -380,15 +408,22 @@ function criticalanglesof(OZ,H,boundary)
     return thetadigits
 end
 
-function allanglesof(OZ,H,boundary)
+function criticalanglesof(aia::AngledInternalAddress)
+    OH = OrientedHubbardTree(aia)
+    OZ = labelonezero(OH)
+    return criticalanglesof(OZ,OH)
+end
+
+function allanglesof(OZ,OH)
     #first we do the critical orbit
     pairs = Dict()
 
-    
-    zero = first(filter(x->x.items[1]=='*',keys(H)))
+    H = OH.adj
+    boundary = OH.boundary
+    zero = OH.zero
     seq = shift(zero)
 
-    angles = criticalanglesof(OZ,H,boundary)
+    angles = criticalanglesof(OZ,OH)
     while !(seq in keys(pairs))
         push!(pairs,Pair(seq,angles))
         seq = shift(seq)
@@ -396,8 +431,8 @@ function allanglesof(OZ,H,boundary)
     end
 
     #next we do the periodic orbits
-    for c in characteristicset(H)
-        angles = anglesofbranch(OZ,H,boundary,c)
+    for c in characteristicset(OH)
+        angles = anglesofbranch(OZ,OH,c)
         seq = c
         while !(seq in keys(pairs))
             push!(pairs,Pair(seq,angles))
@@ -412,7 +447,7 @@ function allanglesof(OZ,H,boundary)
     #last we do the preperiodic branch points. This is slow!
     for node in keys(H)
         if !(node in keys(pairs))
-            push!(pairs,Pair(node,anglesofbranch(OZ,H,boundary,node)))
+            push!(pairs,Pair(node,anglesofbranch(OZ,OH,node)))
         end
     end
 
@@ -420,23 +455,21 @@ function allanglesof(OZ,H,boundary)
 end
 
 function allanglesof(theta::Rational)
-    (H,B) = orientedtree(theta)
-    OZ = labelonezero(H,B)
-    return allanglesof(OZ,H,B)
+    OH = OrientedHubbardTree(theta)
+    OZ = labelonezero(OH)
+    return allanglesof(OZ,OH)
 end
-
-
 
 function angle_echo(theta::Rational)
     aia = AngledInternalAddress(theta)
-    return anglesof(aia)
+    return criticalanglesof(aia)
 end
 
 function valid_binary(theta)
     aia = AngledInternalAddress(theta)
     K = kneadingsequence(theta)
     H = orientedtree(aia)
-    return binary(theta) in anglesof(H,K)
+    return binary(theta) in criticalanglesof(H,K)
 end
 
 

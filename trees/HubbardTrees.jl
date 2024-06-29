@@ -5,7 +5,15 @@
 include("../sequences/AngleDoubling.jl") 
 include("Graphs.jl")
 
-function hubbardtree(K::Sequence{Char})
+abstract type AbstractHubbardTree 
+end
+
+struct HubbardTree <: AbstractHubbardTree
+    zero::Sequence
+    adj::Dict{Sequence,Set{Sequence}}
+end
+
+function HubbardTree(K::Sequence{Char})
     starK = Sequence{Char}(pushfirst!(copy(K.items),'*'),K.preperiod+1)
     #We begin with the critical orbit
     markedpoints = copy(orbit(starK).items)
@@ -19,7 +27,14 @@ function hubbardtree(K::Sequence{Char})
             #println("result is $H")
         end
     end
-    return H
+    return HubbardTree(starK,H)
+end
+
+function HubbardTree(internaladdress::Vector{Int})
+    K = kneadingsequence(internaladdress)
+    seq = copy(K.items)
+    seq[end] = '*'
+    return HubbardTree(Sequence{Char}(seq,0))
 end
 
 function addsequence(Htree,Kseq,(A,Bset),newpoint)
@@ -54,17 +69,10 @@ function addsequence(Htree,Kseq,(A,Bset),newpoint)
     end   
 end
 
-function addsequence(Htree,new)
-    Z = first(filter(x->x.items[1]=='*',keys(Htree)))
+function extend(H::HubbardTree,new::Sequence)
+    Z = H.zero
     K = shift(Z)
-    return addsequence(Htree,K,(Z,deepcopy(Htree[Z])),new)
-end
-
-function hubbardtree(internaladdress::Vector{Int})
-    K = kneadingsequence(internaladdress)
-    seq = copy(K.items)
-    seq[end] = '*'
-    return hubbardtree(Sequence{Char}(seq,0))
+    return HubbardTree(Z,addsequence(H.adj,K,(Z,deepcopy(H.adj[Z])),new))
 end
 
 function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})

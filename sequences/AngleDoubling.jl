@@ -91,6 +91,10 @@ function thetaitinerary(theta::Rational,orb::Sequence)
     return Sequence{Char}(itinerary,orb.preperiod)
 end
 
+function thetaitinerary(theta::Rational,angle::Rational)
+    return thetaitinerary(theta,orbit(angle))
+end
+
 function kneadingsequence(angle::Rational)
     orb = orbit(angle)
     return thetaitinerary(angle,orb)

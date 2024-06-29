@@ -6,25 +6,22 @@ include("../trees/ShowTree.jl")
 
 function characteristicrays(theta::Rational) 
 
-    (OrientedHubbardTree,Boundary) = orientedtree(theta)
+    OHT = OrientedHubbardTree(theta)
 
-    OZ = labelonezero(OrientedHubbardTree,Boundary)
+    OZ = labelonezero(OHT)
 
-    anglelist = allanglesof(OZ,OrientedHubbardTree,Boundary)
+    anglelist = allanglesof(OZ,OHT)
 
-    (EdgeList,Nodes) = adjlist(OrientedHubbardTree)
+    (EdgeList,Nodes) = adjlist(OHT.adj)
     
-
-
     c = spideriterate(theta,100)
-    
     
     #critical orbit
     rays = dynamicrays(c,theta,100,10,20)
     merge!(rays,dynamicrays(c,conjugate(theta),100,10,20))
 
     #periodic branch points
-    characteristicpoints = characteristicset(OrientedHubbardTree)
+    characteristicpoints = characteristicset(OHT)
     for point in characteristicpoints
         merge!(rays,dynamicrays(c,angleof(first(anglelist[point])),100,10,20))
     end
@@ -61,13 +58,13 @@ function characteristicrays(theta::Rational)
 
     pos = Point.(real.(zvalues),imag.(zvalues))
  
-    (fig,ax) = showtree(OrientedHubbardTree,(EdgeList,Nodes),OZ,pos)
+    (fig,ax) = showtree(OHT.adj,(EdgeList,Nodes),OZ,pos)
 
     onlyrays = [pair[2] for pair in rays]
-    plotrays!(ax,onlyrays)
+    #plotrays!(ax,onlyrays)
 
     julia = inverseiterate(c,22)
-    scatter!(ax,real(julia),imag(julia),markersize = 1,color = "black")
+    #scatter!(ax,real(julia),imag(julia),markersize = 1,color = "black")
     
     #scatter!(ax,real(orbit),imag(orbit))
 

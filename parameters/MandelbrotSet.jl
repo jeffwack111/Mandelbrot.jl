@@ -63,7 +63,7 @@ end
     
 function showm(theta::Rational)
     aia = AngledInternalAddress(theta)
-    @time theta2 = first(anglesof(bifurcate(aia)))
+    @time theta2 = angleof(first(criticalanglesof(bifurcate(aia))))
     println(theta2)
     return showm(theta,theta2)
 end
