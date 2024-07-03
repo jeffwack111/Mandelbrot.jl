@@ -9,7 +9,7 @@ function characteristicrays(theta::Rational)
     OHT = OrientedHubbardTree(theta)
 
     OZ = labelonezero(OHT)
-
+ 
     anglelist = allanglesof(OZ,OHT)
 
     (EdgeList,Nodes) = adjlist(OHT.adj)
