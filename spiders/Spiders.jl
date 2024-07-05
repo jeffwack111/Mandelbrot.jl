@@ -7,6 +7,7 @@ struct SpiderInfo
     kneading_sequence::Vector{Char}
     preperiod::Int
 end
+    
 
 function SpiderInfo(theta::Rational)
 
