@@ -192,6 +192,6 @@ function plottree!(scene,K::Sequence)
 end
 
 function plottree(H)
-    scene = Scene()
+    scene = Scene(size=(1000,1000))
     return plottree!(scene,H)
 end
