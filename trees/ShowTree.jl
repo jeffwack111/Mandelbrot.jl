@@ -187,6 +187,10 @@ function plottree!(scene,angle::Rational)
     return plottree!(scene,OrientedHubbardTree(angle))
 end
 
+function plottree!(scene,K::Sequence)
+    return plottree!(scene,HubbardTree(K))
+end
+
 function plottree(H)
     scene = Scene()
     return plottree!(scene,H)
