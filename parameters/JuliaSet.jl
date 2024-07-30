@@ -30,12 +30,17 @@ function juliaframe!(scene,param)
     return scene
 end
 
+function juliaframe(param)
+    scene = Scene(size= (1000,1000),camera = campixel!)
+    return juliaframe!(scene,param)
+end
+
 function binaryframe!(scene,param)
     epsilon = 0.0001
     #We will consider a point arrived at zero if its modulus is less than epsilon, and arrived at infinity if its modulus is greater than 1/epsilon
 
     #first, set up a grid of test points.
-    J = julia_patch(0.0+0.0im,4.0+0.0im)
+    J = julia_patch(0.0+0.0im,2.0+0.0im)
 
     maxiter = 100
     f(z) = z*z + param
@@ -43,13 +48,11 @@ function binaryframe!(scene,param)
 
     pic = assignbinary.(escapetime.(PA))
 
-
     heatmap!(scene,pic,colormap = :grayC, nan_color = RGBf(172/255, 88/255, 214/255))
     return scene
 end
 
 function binaryframe(param)
-    scene = Scene(camera=campixel!, resolution=(1000,1000))
-
+    scene = Scene(size= (1000,1000),camera = campixel!)
     return binaryframe!(scene,param)
 end
