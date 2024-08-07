@@ -154,3 +154,24 @@ function findone(f,A)
         return first(list)
     end
 end
+
+function isbetween(htree::Dict,a,b,c)
+    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+    K = shift(zero)
+    (type,vertex) = iteratetriod(K,(a,b,c))
+    if type == "flat" && vertex == a
+        return true
+    else
+        return false
+    end
+end
+
+function nodepath(graph, start, finish)
+    path = [start]
+    node = start
+    while node != finish
+        node = first(filter(x->isbetween(graph,x,finish,node),graph[node]))
+        push!(path,node)  
+    end
+    return path
+end

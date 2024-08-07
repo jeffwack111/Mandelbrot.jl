@@ -49,6 +49,7 @@ function plottree!(scene, OHT::OrientedHubbardTree)
     (EdgeList,Nodes) = adjlist(OHT.adj)
 
     criticalorbit = orbit(OHT.zero)
+    
     labels = []
     nodecolors = []
     for node in Nodes

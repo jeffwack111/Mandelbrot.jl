@@ -83,12 +83,7 @@ function characteristicset(H::AbstractHubbardTree)
     #There should be a single element of C which is between 0 and all the other elements
     zero = H.zero
     crit_value = shift(zero)
-    path = [zero]
-    node = zero
-    while node != crit_value
-        node = first(filter(x->isbetween(H.adj,x,crit_value,node),H.adj[node]))
-        push!(path,node)  
-    end
+    path = nodepath(H.adj,zero,crit_value)
     D = []
     for node in path
         if node in C
@@ -212,29 +207,13 @@ function orientpreimages(H,P,target::Pair{Sequence{Char}, Vector{Sequence{Char}}
     return keyvaluepairs
 end
 
-function isbetween(htree::Dict,a,b,c)
-    zero = first(filter(x->x.items[1]=='*',keys(htree)))
-    K = shift(zero)
-    (type,vertex) = iteratetriod(K,(a,b,c))
-    if type == "flat" && vertex == a
-        return true
-    else
-        return false
-    end
-end
-
 function addboundary(htree::HubbardTree)
     beta = Sequence("B",0)
     mbeta = Sequence("AB",1)
     H = extend(htree,beta)
     H = extend(H,mbeta)
     
-    boundary = [beta]
-    node = beta
-    while node != mbeta
-        node = first(filter(x->isbetween(H.adj,x,mbeta,node),H.adj[node]))
-        push!(boundary,node)  
-    end
+    boundary = nodepath(H.adj,beta,mbeta)
 
     return (H,boundary)
 end

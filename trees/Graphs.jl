@@ -1,4 +1,3 @@
-#returns the connected component which includes a given node
 function adjlist(graph::Dict)
     #first, assign an index to each point
     nodes = collect(keys(graph))
@@ -86,3 +85,9 @@ function neighbortowards(graph,base,target)
         end
     end
 end
+
+function edgeset(graph::Dict)
+    return Set(vcat([[Set([key,value]) for value in graph[key]] for key in keys(graph)]...))
+end
+
+
