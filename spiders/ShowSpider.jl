@@ -33,8 +33,6 @@ function showspider(angle::Rational,frames::Int)
             lines!(real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
             text!(real(leg[1]),imag(leg[1]);text = "$j")
         end
-        
-
     end 
 
     return list[end][2][end]/2

@@ -12,7 +12,7 @@ function embednodes(OHT::OrientedHubbardTree)
     criticalorbit = orbit(OHT.zero) #This is a sequence orbit
 
     theta = angleof(first(criticalanglesof(OZ,OHT)))
-    c = spideriterate(theta,100)
+    c = spideriterate(theta,200)
 
     #critical orbit
     rays = Dict()
@@ -57,6 +57,7 @@ end
 
 function standardedges(OHT::OrientedHubbardTree)
     zvalues = embednodes(OHT)
+    c = zvalues[shift(OHT.zero)]
     edges = edgeset(OHT.adj)
 
     edgevectors = []
@@ -65,7 +66,7 @@ function standardedges(OHT::OrientedHubbardTree)
         finish = first(filter(z -> z!= start,edge))
         push!(edgevectors,Pair(edge,(start,[zvalues[start],zvalues[finish]])))
     end
-    return Dict(edgevectors)
+    return (Dict(edgevectors),c)
 end
 
 function longpath(OHT, edgevectors, start, finish)
@@ -94,4 +95,59 @@ function longpath(OHT, edgevectors, start, finish)
 
     return longpath
 
+end
+
+function refinetree(OHT,c,edgevectors)
+    newedges = []
+    for edge in keys(edgevectors)
+        start = edgevectors[edge][1]
+        finish = first(filter(x->x!=start,edge))
+        #determine the image of this edge
+        image = longpath(OHT,edgevectors,shift(start),shift(finish))
+
+        x = sqrt(-c + image[1])
+        y = -sqrt(-c + image[1])
+
+        if abs2(x-edgevectors[edge][2][1]) < abs2(y-edgevectors[edge][2][1])
+            push!(newedges,Pair(edge,(start,path_sqrt(image .- c))))
+        else
+            push!(newedges,Pair(edge,(start,-path_sqrt(image .- c))))
+        end
+    end
+    return Dict(newedges)
+end
+
+function plotedges!(scene,edgevectors)
+    for edge in edgevectors
+        line = edge[2][2]
+        lines!(scene,real.(line)/2,imag(line)/2,color = "black")
+    end
+    return scene
+end
+
+function plotedges(edgevectors)
+    scene = Scene(size=(1000,1000),aspect = 1)
+    return plotedges!(scene,edgevectors)
+end
+
+function embedanim(AIA::AngledInternalAddress,frames)
+    OHT = OrientedHubbardTree(AIA)
+    (E,c) = standardedges(OHT)
+
+    edgelist = [E]
+    for ii in 1:frames
+        E = refinetree(OHT,c,E)
+        push!(edgelist,E)
+    end
+
+    scene = Scene(size=(1000,1000),aspect = 1)
+    record(scene,"embedding.gif",1:frames,framerate = 3) do ii
+        empty!(scene)
+        plotedges!(scene,edgelist[ii])
+    end
+end
+
+function embedanim(angle::Rational,frames)
+    AIA = AngledInternalAddress(angle)
+    return embedanim(AIA,frames)
 end
