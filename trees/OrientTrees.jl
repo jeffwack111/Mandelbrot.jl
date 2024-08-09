@@ -265,38 +265,6 @@ function labelonezero(OH::OrientedHubbardTree)
     return OZ
 end
 
-function oneangleof(OZ,htree,boundary,node)
-    #First, we will calculate any angle of the characteristic point
-    initialneighbor = first(htree[node])
-    neighbor = initialneighbor
-    angle = Char[]
-    visited = []
-    while !((node in visited) && neighbor == initialneighbor) || isempty(visited)
-        push!(visited,node)
-        if OZ[node] == '*' #We are on the boundary and need to use neighbor info
-            if OZ[neighbor] == '*'
-                #Are we before or after the node on the boundary?
-                nodeidx = findone(x->x==node,boundary)
-                neighbidx = findone(x->x==neighbor,boundary)
-                if nodeidx > neighbidx
-                    push!(angle,'0')
-                else
-                    push!(angle,'1')
-                end
-            else
-                push!(angle,OZ[neighbor])
-            end
-        else #We are not on the boundary and need no neighbor info
-            push!(angle,OZ[node])
-        end
-        node = shift(node)
-        neighbor = neighbortowards(htree,node,shift(neighbor))
-    end
-    thetadigits = Sequence{Char}(angle,node.preperiod)
-    theta = angleof(thetadigits)
-    return theta
-end
-
 function anglesofbranch(OZ,OH,node)
     htree = OH.adj
     boundary = OH.boundary

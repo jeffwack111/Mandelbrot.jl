@@ -1,4 +1,6 @@
 include("OrientTrees.jl")
+include("../spiders/Spiders.jl")
+include("../parameters/DynamicRays.jl")
 
 function edgepath(graph,start, finish)
     vertexpath = nodepath(graph, start,finish)
@@ -12,7 +14,7 @@ function embednodes(OHT::OrientedHubbardTree)
     criticalorbit = orbit(OHT.zero) #This is a sequence orbit
 
     theta = angleof(first(criticalanglesof(OZ,OHT)))
-    c = spideriterate(theta,200)
+    c = spideriterate(theta,250)
 
     #critical orbit
     rays = Dict()
@@ -32,8 +34,8 @@ function embednodes(OHT::OrientedHubbardTree)
         end
     end
     
-    merge!(rays,dynamicrays(c,1//2,100,10,20))
-    merge!(rays,dynamicrays(c,0//1,100,10,20))
+    merge!(rays,dynamicrays(c,1//2,100,10,40))
+    merge!(rays,dynamicrays(c,0//1,100,10,40))
 
     paramorbit = [0.0+0.0im]
     n = period(theta)
@@ -62,7 +64,7 @@ function standardedges(OHT::OrientedHubbardTree)
 
     edgevectors = []
     for edge in edges
-        start = first(edge)
+        start = first(filter(z -> z!= OHT.zero,edge))
         finish = first(filter(z -> z!= start,edge))
         push!(edgevectors,Pair(edge,(start,[zvalues[start],zvalues[finish]])))
     end
@@ -105,13 +107,18 @@ function refinetree(OHT,c,edgevectors)
         #determine the image of this edge
         image = longpath(OHT,edgevectors,shift(start),shift(finish))
 
-        x = sqrt(-c + image[1])
-        y = -sqrt(-c + image[1])
+        refinedimage = [image[1]]
+        for point in image[2:end]
+            push!(refinedimage, (refinedimage[end]+point)/2)
+            push!(refinedimage,point)
+        end
 
-        if abs2(x-edgevectors[edge][2][1]) < abs2(y-edgevectors[edge][2][1])
-            push!(newedges,Pair(edge,(start,path_sqrt(image .- c))))
+        x = sqrt(-c + refinedimage[1])
+
+        if abs2(x-edgevectors[edge][2][1]) < abs2(-x-edgevectors[edge][2][1])
+            push!(newedges,Pair(edge,(start,path_sqrt(-c .+ refinedimage))))
         else
-            push!(newedges,Pair(edge,(start,-path_sqrt(image .- c))))
+            push!(newedges,Pair(edge,(start,-path_sqrt(-c .+ refinedimage))))
         end
     end
     return Dict(newedges)
