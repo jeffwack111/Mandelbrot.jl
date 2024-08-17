@@ -17,7 +17,26 @@ function treecolors(A,B,distance)
             Colors.HSL{Float64}(B, sat, light)]
 end
 
-colors = treecolors(0,220,70)
+
+function addsome(A,B,C)
+    return [A,
+            Colors.weighted_color_mean(0.125,C,A),
+            Colors.weighted_color_mean(0.25,C,A),
+            Colors.weighted_color_mean(0.25,C,B),
+            Colors.weighted_color_mean(0.125,C,B),
+            B]
+end
+
+cspace = XYZ
+                
+y = convert(cspace,Colors.RGB(1,1,0))
+r = convert(cspace,Colors.RGB(1,0.2,0.2))
+b = convert(cspace,Colors.RGB(0.2,0.2,1))
+
+
+#colors = treecolors(0,220,70)
+
+colors = addsome(r,b,y)
 
 pie!(scene,ones(length(colors)),
                  color = colors,
@@ -27,7 +46,6 @@ pie!(scene,ones(length(colors)),
                  strokewidth = 0,
                 )
 
-                
-y = Colors.RGB(1,1,0)
-
 scene
+
+

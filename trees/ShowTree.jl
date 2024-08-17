@@ -41,7 +41,7 @@ function generationposition(E,root)
     return Point.(X,Y)
 end
 
-function plottree!(scene, OHT::OrientedHubbardTree)
+function plottree!(scene, OHT::OrientedHubbardTree,colors = )
     OZ = labelonezero(OHT)
 
     anglelist = allanglesof(OZ,OHT)
