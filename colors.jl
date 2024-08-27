@@ -1,6 +1,6 @@
 using ColorSchemes
 using Colors
-using CairoMakie
+using GLMakie
 
 n = 18
 colors = [Colors.HSL{Float64}(30+360*i/n, 1, 0.5) for i in 0:(n-1)]

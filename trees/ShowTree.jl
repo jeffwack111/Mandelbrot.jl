@@ -1,4 +1,4 @@
-using CairoMakie
+using GLMakie
 include("HubbardTrees.jl")
 include("OrientTrees.jl")
 include("../spiders/Spiders.jl")
@@ -41,7 +41,7 @@ function generationposition(E,root)
     return Point.(X,Y)
 end
 
-function plottree!(scene, OHT::OrientedHubbardTree,colors = )
+function plottree!(scene, OHT::OrientedHubbardTree,colors = [])
     OZ = labelonezero(OHT)
 
     anglelist = allanglesof(OZ,OHT)
@@ -193,6 +193,6 @@ function plottree!(scene,K::Sequence)
 end
 
 function plottree(H)
-    scene = Scene(size=(1000,1000),aspect = 1)
+    scene = Scene(size=(500,500))
     return plottree!(scene,H)
 end

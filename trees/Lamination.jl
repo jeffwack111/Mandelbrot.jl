@@ -1,4 +1,4 @@
-using CairoMakie
+using GLMakie
 using ColorSchemes
 
 #Merge this file with angledoubling? 

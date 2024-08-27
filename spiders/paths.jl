@@ -1,4 +1,4 @@
-using CairoMakie
+using GLMakie
 include("SpiderFuncs.jl")
 
 A = 1.0-3.0im

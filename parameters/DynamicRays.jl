@@ -1,4 +1,4 @@
-using CairoMakie
+using GLMakie
 using ColorSchemes
 include("../sequences/AngleDoubling.jl")
 include("../spiders/SpiderFuncs.jl")
