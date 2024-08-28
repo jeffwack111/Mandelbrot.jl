@@ -21,17 +21,18 @@ function juliamovie(frames::Int)
     end
 end
 
-function juliaframe!(scene,param)
+function juliaframe!(scene,param,colors)
     J = julia_patch(0.0+0.0im,2.0+0.0im)
     f(z) = z*z + param
     PA = jproblem_array(J,f,escapeorconverge(100),100)
     pic = [x[1] for x in escapetime.(PA)]
-    heatmap!(scene,pic,nan_color = RGBAf(0,0,0,1),colormap = :dense)
+    n_colors = length(colors[])
+    heatmap!(scene,pic,nan_color = RGBAf(0,0,0,1),colormap = colors,interpolate = false,colorrange = (1,n_colors),colorscale = x->mod1(x,n_colors))
     return scene
 end
 
 function juliaframe(param)
-    scene = Scene(size= (1000,1000),camera = campixel!)
+    scene = Scene(size= (500,500))#,camera = campixel!)
     return juliaframe!(scene,param)
 end
 
@@ -53,6 +54,6 @@ function binaryframe!(scene,param)
 end
 
 function binaryframe(param)
-    scene = Scene(size= (1000,1000),camera = campixel!)
+    scene = Scene(size= (500,500),camera = campixel!)
     return binaryframe!(scene,param)
 end
