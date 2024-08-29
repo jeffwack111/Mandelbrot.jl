@@ -255,6 +255,25 @@ function denominators(S::Vector{Int})
     return q
 end
 
+function denominator(AIA::AngledInternalAddress,new::Int)
+    K = kneadingsequence(AIA.addr)
+    p = rhoSequence(K)
+
+    r = mod1(new,AIA.addr[end])
+    orb = p(r)
+
+    if AIA.addr[end] in orb
+        qk = Int((new - r)/AIA.addr[end] + 1) #why is this always an integer?
+
+    else
+        qk = Int((new - r)/AIA.addr[end] + 2)
+
+    end
+    
+    return qk
+end
+
+
 function numembeddings(I::Vector{Int})
     D = denominators(I)
     n = 1

@@ -7,7 +7,7 @@ function colorax(ax)
     hidedecorations!(ax)
     hidespines!(ax)
     deactivate_interaction!(ax, :rectanglezoom)
-    #deactivate_interaction!(ax, :dragpan)
+    deactivate_interaction!(ax, :dragpan)
     #deactivate_interaction!(ax, :scrollzoom)
 
     sg = SliderGrid(fig[2,1],
