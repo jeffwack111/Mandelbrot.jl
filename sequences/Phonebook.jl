@@ -32,10 +32,10 @@ function drawwedges!(ax,AIA)
             if gcd(jj,k) == 1
                 push!(angles,(jj-0.5)*2*pi/(k-1))
                 push!(angletext, "$jj/$k $ii")
-                push!(wedges,((jj-1)*2*pi/(k-1),(jj)*2*pi/(k-1),2^(ii-1),2^ii))
+                push!(wedges,((jj-1)*2*pi/(k-1),(jj)*2*pi/(k-1),2.0^(-ii+1),2.0^-ii))
             end
         end
-        r = (2^ii+2^(ii-1))/2
+        r = (2.0^-ii+2.0^(-ii+1))/2
         centers = [(r*cos(theta),r*sin(theta)) for theta in angles]
         for wedge in wedges
             wedge!(ax,wedge...)
@@ -59,7 +59,7 @@ function phonebook!(gl,AIA)
         if event.type === MouseEventTypes.leftdown
             ang = atan(event.data[2],event.data[1])
             rad = sqrt(sum([x*x for x in event.data]))
-            idx = Int(ceil(log2(rad)))
+            idx = -1*Int(floor(log2(rad)))
             if idx > 0
                 k = denominator(AIA[],idx)
                 num = Int(mod1(ceil(ang*(k-1)/(2*pi)),k-1))
