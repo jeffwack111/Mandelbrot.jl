@@ -3,21 +3,44 @@ include("AngleDoubling.jl")
 
 #for each internal address, calculate a screen which shows the future options
 
+function wedge!(ax,start,finish,innerrad,outerrad)
+    distance = finish - start
+    vertex_per_deg = 1
+    nvertices = max(2, ceil(Int, rad2deg(distance) * vertex_per_deg))
+
+    outerpoints = map(LinRange(start, finish, nvertices)) do rad
+                Point2(cos(rad) * outerrad, sin(rad) * outerrad)
+            end
+    innerpoints = map(LinRange(finish, start, nvertices)) do rad
+                Point2(cos(rad) * innerrad, sin(rad) * innerrad)
+            end
+
+    points = append!(innerpoints,outerpoints)
+
+    poly!(ax,points)
+end
+
 function drawwedges!(ax,AIA)
     N = AIA.addr[end]
-    n = 5
+    n = 20
     for ii in N+1:N+n 
         k = denominator(AIA,ii)
         angles = []
+        wedges = []
+        angletext = []
         for jj in 1:k-1
             if gcd(jj,k) == 1
                 push!(angles,(jj-0.5)*2*pi/(k-1))
+                push!(angletext, "$jj/$k $ii")
+                push!(wedges,((jj-1)*2*pi/(k-1),(jj)*2*pi/(k-1),2^(ii-1),2^ii))
             end
         end
         r = (2^ii+2^(ii-1))/2
         centers = [(r*cos(theta),r*sin(theta)) for theta in angles]
-        pie!(ax,ones(k-1),radius = 2^ii, inner_radius = 2^(ii-1))
-        text!(ax,centers,text = fill("$ii",length(centers)), align = (:center,:center))
+        for wedge in wedges
+            wedge!(ax,wedge...)
+        end
+        text!(ax,centers,text = angletext, align = (:center,:center))
     end
 end
 
