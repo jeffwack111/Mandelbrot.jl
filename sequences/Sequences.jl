@@ -46,8 +46,12 @@ function ==(x::Sequence,y::Sequence)
 end
 
 function Base.getindex(S::Sequence, ii::Int)
-    k = length(S.items) - S.preperiod
-    return S.items[mod1(ii-S.preperiod,k)]
+    if ii <= S.preperiod
+        return S.items[ii]
+    else
+        k = length(S.items) - S.preperiod
+        return S.items[mod1(ii-S.preperiod,k)]
+    end
 end
 
 function Base.getindex(S::Sequence, I::UnitRange)
@@ -127,6 +131,16 @@ function divisors(n)
     return sort(d)
 end
 
+function agrees(K::Sequence,str::String)
+    for (ii,item) in enumerate(str)
+        if item !== K[ii] 
+            return false
+        end
+    end
+    return true
+end
 
-
+function prepend(K::Sequence,thing)
+    return Sequence{Char}(pushfirst!(copy(K.items),thing),K.preperiod+1)
+end
 

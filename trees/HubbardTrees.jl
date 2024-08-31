@@ -9,12 +9,28 @@ abstract type AbstractHubbardTree
 end
 
 struct HubbardTree <: AbstractHubbardTree
-    zero::Sequence
+    zero::Sequence #Rename this to critical? Remove it and use H["*"] everywhere?
     adj::Dict{Sequence,Set{Sequence}}
 end
 
+function Base.getindex(H::HubbardTree, str::String)
+    list = []
+    for (K,neighbors) in pairs(H.adj)
+        if agrees(K,str)
+            newneighbors = []
+                for N in neighbors
+                    if agrees(N,str)
+                        push!(newneighbors,N)
+                    end
+                end
+            push!(list,Pair(K,newneighbors))
+        end
+    end
+    return Dict(list)
+end
+
 function HubbardTree(K::Sequence{Char})
-    starK = Sequence{Char}(pushfirst!(copy(K.items),'*'),K.preperiod+1)
+    starK = prepend(K,'*')
     #We begin with the critical orbit
     markedpoints = copy(orbit(starK).items)
 
