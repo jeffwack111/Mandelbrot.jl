@@ -2,11 +2,6 @@ include("OrientTrees.jl")
 include("../spiders/Spiders.jl")
 include("../parameters/DynamicRays.jl")
 
-function edgepath(graph,start, finish)
-    vertexpath = nodepath(graph, start,finish)
-    return [Set(E) for E in partition(vertexpath,2,1)]
-end
-
 function embednodes(OHT::OrientedHubbardTree)
     OZ = labelonezero(OHT)
     anglelist = allanglesof(OZ,OHT)
@@ -57,9 +52,7 @@ function embednodes(OHT::OrientedHubbardTree)
     return zvalues
 end
 
-function standardedges(OHT::OrientedHubbardTree)
-    zvalues = embednodes(OHT)
-    c = zvalues[shift(OHT.zero)]
+function standardedges(OHT::OrientedHubbardTree,zvalues)
     edges = edgeset(OHT.adj)
 
     edgevectors = []
@@ -68,7 +61,7 @@ function standardedges(OHT::OrientedHubbardTree)
         finish = first(filter(z -> z!= start,edge))
         push!(edgevectors,Pair(edge,(start,[zvalues[start],zvalues[finish]])))
     end
-    return (Dict(edgevectors),c)
+    return Dict(edgevectors)
 end
 
 function longpath(OHT, edgevectors, start, finish)
@@ -97,6 +90,20 @@ function longpath(OHT, edgevectors, start, finish)
 
     return longpath
 
+end
+
+function edgepath(graph,start, finish)
+    vertexpath = nodepath(graph, start,finish)
+    return [Set(E) for E in partition(vertexpath,2,1)]
+end
+
+function refinedtree(OHT,zvalues,steps)
+    c = zvalues[shift(OHT.zero)]
+    E = standardedges(OHT,zvalues)
+    for ii in 1:steps
+        E = refinetree(OHT,c,E)
+    end
+    return E
 end
 
 function refinetree(OHT,c,edgevectors)
@@ -158,3 +165,16 @@ function embedanim(angle::Rational,frames)
     AIA = AngledInternalAddress(angle)
     return embedanim(AIA,frames)
 end
+
+function showtree!(scene,angle::Rational)
+    E = refinedtree(angle,8)
+    return plotedges!(scene,E)
+end
+
+function showtree(angle::Rational)
+    scene = Scene(size=(500,500))
+    return showtree!(scene, angle)
+end
+    
+
+

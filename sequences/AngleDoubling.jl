@@ -255,7 +255,7 @@ function denominators(S::Vector{Int})
     return q
 end
 
-function denominator(AIA::AngledInternalAddress,new::Int)
+function newdenominator(AIA::AngledInternalAddress,new::Int)
     K = kneadingsequence(AIA.addr)
     p = rhoSequence(K)
 

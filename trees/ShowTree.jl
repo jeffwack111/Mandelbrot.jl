@@ -1,47 +1,29 @@
 using GLMakie
 include("HubbardTrees.jl")
 include("OrientTrees.jl")
+include("EmbedTrees.jl")
 include("../spiders/Spiders.jl")
 include("../parameters/DynamicRays.jl")
 
-function generationposition(E,root)
-    T = [[root],E[root]]
-    
-    nadded = 1 + length(T[2])
-    n = length(E)
 
-    while nadded < n
-        parents = T[end]
-        children = []
-        for parent in parents
-            #cycle E[parent] so that the grandparent is in the last position
-            s = findone(x-> x in T[end-1], E[parent])
-            for u in circshift(E[parent],-s)
-                if !(u in T[end-1])
-                    push!(children,u)
-                end
-            end
-        end
-        push!(T,children)
-        nadded += length(children)
-    end
-    Ngens = length(T)
-
-    X = zeros(Float64,n) 
-    Y = zeros(Float64,n)
-    
-    for (gen,vertices) in enumerate(T)
-        k = length(vertices)
-        for (ii,u) in enumerate(vertices)
-            X[u] = 2*ii/(k+1) -1
-            Y[u] = 2*(1 - gen/(Ngens+1))-1
-        end
-    end
-
-    return Point.(X,Y)
+### Convenience functions
+function plottree!(scene,angle::Rational)
+    return plottree!(scene,OrientedHubbardTree(angle))
 end
 
-function plottree!(scene, OHT::OrientedHubbardTree,colors = [])
+function plottree!(scene,K::Sequence)
+    return plottree!(scene,HubbardTree(K))
+end
+
+function plottree(H)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    return (fig,plottree!(ax,H))
+end
+###
+
+
+function plottree!(scene, OHT::OrientedHubbardTree,steps = 8,colors = [])
     OZ = labelonezero(OHT)
 
     anglelist = allanglesof(OZ,OHT)
@@ -84,46 +66,13 @@ function plottree!(scene, OHT::OrientedHubbardTree,colors = [])
         end
     end
 
-    theta = angleof(first(criticalanglesof(OZ,OHT)))
-    c = spideriterate(theta,100)
-
-    #critical orbit
-    rays = Dict()
-    #periodic branch points
-    characteristicpoints = characteristicset(OHT)
-    for point in characteristicpoints
-        merge!(rays,dynamicrays(c,angleof(first(anglelist[point])),100,10,20))
-    end
-
-    #preperiod branch points. This is slow!
-    for node in Nodes
-        for angle in anglelist[node]
-            if !(angle in keys(rays))
-                theta = angleof(angle)
-                push!(rays,Pair(theta,dynamicrays(c,theta,100,10,20)[theta]))
-            end
-        end
-    end
-    
-    merge!(rays,dynamicrays(c,1//2,100,10,20))
-    merge!(rays,dynamicrays(c,0//1,100,10,20))
-
-    paramorbit = [0.0+0.0im]
-    n = period(theta)
-    for ii in 1:n-1
-        push!(paramorbit,paramorbit[end]^2+c)
-    end
-
+    zvaluedict = embednodes(OHT)
     zvalues = []
     for node in Nodes
-        if '*' in node.items #then it is in the critical orbit
-            idx = findone(x->x=='*',node.items)
-            push!(zvalues,paramorbit[mod1(n-idx+2,n)])
-        else
-            list = [rays[angleof(angle)][end] for angle in anglelist[node]]
-            push!(zvalues,sum(list)/length(list))
-        end
+        push!(zvalues,zvaluedict[node])
     end
+
+    E = refinedtree(OHT,zvaluedict,steps)
 
     pos = Point.(real.(zvalues)/2,imag.(zvalues)/2) #divide by 2 here for the scene coordinate system
 
@@ -131,14 +80,16 @@ function plottree!(scene, OHT::OrientedHubbardTree,colors = [])
 
     for (ii,p) in enumerate(EdgeList)
         for n in p
+            cmplxedge = E[Set([Nodes[ii],Nodes[n]])][2]
+            realedge = Point.(real.(cmplxedge)/2,imag.(cmplxedge)/2) 
             if nodecolors[ii] in colorsforinterior 
-                lines!(scene,[pos[ii],pos[n]],color = nodecolors[ii])
+                lines!(scene,realedge,color = nodecolors[ii],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
             elseif nodecolors[n] in colorsforinterior
-                lines!(scene,[pos[ii],pos[n]],color = nodecolors[n])
+                lines!(scene,realedge,color = nodecolors[n],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
             elseif nodecolors[ii] !== "black" 
-                lines!(scene,[pos[ii],pos[n]],color = nodecolors[ii])
+                lines!(scene,realedge,color = nodecolors[ii],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
             elseif nodecolors[n] !== "black" 
-                lines!(scene,[pos[ii],pos[n]],color = nodecolors[n])
+                lines!(scene,realedge,color = nodecolors[n],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
             end
         end
     end
@@ -184,15 +135,40 @@ function plottree!(scene, H::HubbardTree)
     return scene
 end
 
-function plottree!(scene,angle::Rational)
-    return plottree!(scene,OrientedHubbardTree(angle))
-end
 
-function plottree!(scene,K::Sequence)
-    return plottree!(scene,HubbardTree(K))
-end
+function generationposition(E,root)
+    T = [[root],E[root]]
+    
+    nadded = 1 + length(T[2])
+    n = length(E)
 
-function plottree(H)
-    scene = Scene(size=(500,500))
-    return plottree!(scene,H)
+    while nadded < n
+        parents = T[end]
+        children = []
+        for parent in parents
+            #cycle E[parent] so that the grandparent is in the last position
+            s = findone(x-> x in T[end-1], E[parent])
+            for u in circshift(E[parent],-s)
+                if !(u in T[end-1])
+                    push!(children,u)
+                end
+            end
+        end
+        push!(T,children)
+        nadded += length(children)
+    end
+    Ngens = length(T)
+
+    X = zeros(Float64,n) 
+    Y = zeros(Float64,n)
+    
+    for (gen,vertices) in enumerate(T)
+        k = length(vertices)
+        for (ii,u) in enumerate(vertices)
+            X[u] = 2*ii/(k+1) -1
+            Y[u] = 2*(1 - gen/(Ngens+1))-1
+        end
+    end
+
+    return Point.(X,Y)
 end
