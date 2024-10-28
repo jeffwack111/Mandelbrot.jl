@@ -83,14 +83,15 @@ function plottree!(scene, OHT::OrientedHubbardTree,steps = 8,colors = [])
             cmplxedge = E[Set([Nodes[ii],Nodes[n]])][2]
             realedge = Point.(real.(cmplxedge)/2,imag.(cmplxedge)/2) 
             if nodecolors[ii] in colorsforinterior 
-                lines!(scene,realedge,color = nodecolors[ii],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
+                col = nodecolors[ii]
             elseif nodecolors[n] in colorsforinterior
-                lines!(scene,realedge,color = nodecolors[n],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
+                col = nodecolors[n]
             elseif nodecolors[ii] !== "black" 
-                lines!(scene,realedge,color = nodecolors[ii],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
+                col = nodecolors[ii]
             elseif nodecolors[n] !== "black" 
-                lines!(scene,realedge,color = nodecolors[n],linewidth = 1,transparency = true,overdraw = true,fxaa = true)
+                col = nodecolors[n]
             end
+            lines!(scene,realedge,color = col,linewidth = 1,transparency = true,overdraw = true)
         end
     end
 
