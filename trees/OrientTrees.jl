@@ -6,6 +6,11 @@ struct OrientedHubbardTree <: AbstractHubbardTree
     boundary::Vector{Sequence}
 end
 
+function Base.show(io::IO,H::OrientedHubbardTree)
+    println(io,"Oriented Hubbard tree with adjacency dictionary")
+    return display(H.adj)
+end
+
 function forwardimages(htree::Dict)
     return Dict([Pair(key,[shift(key)]) for key in keys(htree)])
 end 
@@ -100,23 +105,21 @@ function characteristicorbits(H)
 end
 
 function OrientedHubbardTree(AIA::AngledInternalAddress)
+    #Construct the unoriented Hubbard tree from the internal address ignoring the angles
     H = HubbardTree(AIA.addr)
 
+    #Find the boundary between the '0' region and the '1' region as the path between the beta fixed point and its preimage
     (H,boundary) = addboundary(H)
 
-    nums = Int[]
-    for angle in AIA.angles
-        if denominator(angle) > 2
-            push!(nums,numerator(angle))
-        end
-    end
+    #Filter the angles for those describing the characteristic points
+    charangles = filter(x -> denominator(x) != 2, AIA.angles)
 
+    #create empty oriented tree. 
     orientedH = Dict{Sequence{Char}, Vector{Sequence{Char}}}()
 
     charorbits = characteristicorbits(H)
-
-    for (node, num) in zip(charorbits,nums)
-        merge!(orientedH,orientpreimages(H.adj,node[2],orientcharacteristic(H, node[1],num)))
+    for (node, ang) in zip(charorbits,charangles)
+        merge!(orientedH,orientpreimages(H.adj,node[2],orientcharacteristic(H, node[1],ang)))
     end
 
     #Deal with the critical orbit
@@ -169,13 +172,19 @@ function orientnode(H,source::Sequence{Char},target::Pair{Sequence{Char}, Vector
 end
 
 #SKETCHY SKETCHY
-function orientcharacteristic(H,node,num)
+function orientcharacteristic(H,node,ang)
+    num = numerator(ang)
+    den = denominator(ang)
     glarms = globalarms(H.adj,node)
     zero = H.zero
     per = period(zero)
     c = shift(zero)
     q = length(glarms)
     n = period(node)
+
+    if den != q
+        error("the denominator of the characteristic angle does not match the order of the branch point")
+    end
     
     #the characteristic point has arms towards 1-n,1,1+n,1+2n, where n is the period of the characteristic point
     #the numerator tells us the arm towards 1 is in position num
@@ -405,6 +414,11 @@ function allanglesof(theta::Rational)
     OH = OrientedHubbardTree(theta)
     OZ = labelonezero(OH)
     return allanglesof(OZ,OH)
+end
+
+function allanglesof(H::OrientedHubbardTree)
+    OZ = labelonezero(H)
+    return allanglesof(OZ,H)
 end
 
 function angle_echo(theta::Rational)

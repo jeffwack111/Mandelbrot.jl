@@ -1,7 +1,7 @@
 using GLMakie
 using Colors
 
-function colorax(ax)
+function colorax(ax,n_colors)
 
     activebox = Observable{Int}(1)
     hidedecorations!(ax)
@@ -65,9 +65,8 @@ function colorax(ax)
     return colorobservables
 end
 
-n_colors = 8
 
 fig = Figure()
 ax = Axis(fig[1,1],aspect = 1)
-colorax(ax)
+colorax(ax,9)
 fig
