@@ -2,26 +2,29 @@ using IterTools
 include("SpiderFuncs.jl")
 include("../sequences/AngleDoubling.jl")
 
-struct SpiderInfo
-    orbit::Vector{Rational}
-    kneading_sequence::Vector{Char}
-    preperiod::Int
+struct Spider
+    angle::Rational
+    orbit::Sequence{Rational}
+    kneading_sequence::Sequence{Char}
+    legs::Vector{Vector{ComplexF64}}
 end
-    
 
-function SpiderInfo(theta::Rational)
+function Base.show(io::IO, S::Spider)
+    npoints = sum([length(leg) for leg in S.legs])
+    return println("A "*repr(S.angle)*"-spider with kneading sequence "*repr(S.kneading_sequence)*" and "*repr(npoints)*" points.")
+end
 
+function standardspider(theta::Rational)
     orb = orbit(theta)
-    K = kneadingsequence(theta)
-
-    return SpiderInfo(orb.items,K.items,K.preperiod)
-
+    K = thetaitinerary(theta,orb) #the kneading sequence is calculated like so to avoid recalculating the orbit of theta
+    legs = standardlegs(orb)
+    return Spider(theta,orb,K,legs)
 end
 
-function standardlegs(SpIf::SpiderInfo)
+function standardlegs(orbit::Sequence)
     r = collect(LinRange(100,1,10))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
     legs  = Vector{ComplexF64}[]
-    for theta in SpIf.orbit
+    for theta in orbit.items
         push!(legs,(cos(theta*2*pi)+1.0im*sin(theta*2*pi)) .* r)
     end
     legs[1] = legs[1] .- legs[1][end]
@@ -58,16 +61,16 @@ function stats(legs::Vector{Vector{ComplexF64}})
     println(radius)
 end
 
-function spidermap(S::SpiderInfo, Legs::Vector{Vector{ComplexF64}})
-    λ = Legs[2][end] #the parameter of our polynomial map z -> λ(1+z/2)^2
-    a = (angle(Legs[1][1]/λ)/(2*pi)+1)%1 #the angle whose halves will define the boundary between regions A and B at infinity. in full turns
+function mapspider!(S::Spider)
+    λ = S.legs[2][end] #the parameter of our polynomial map z -> λ(1+z/2)^2
+    a = (angle(S.legs[1][1]/λ)/(2*pi)+1)%1 #the angle whose halves will define the boundary between regions A and B at infinity. in full turns
 
     n = length(S.orbit)
 
     newLegs = Vector{Vector{ComplexF64}}(undef,n)
 
     #leg 1 goes first
-    newLegs[1] = path_sqrt(Legs[2]./λ)
+    newLegs[1] = path_sqrt(S.legs[2]./λ)
 
     theta1 = (angle(newLegs[1][1])/(2*pi)+1)%1 #gives the angle of the shoulder in full turns
     #this angle lays in region A by definition. 
@@ -82,75 +85,75 @@ function spidermap(S::SpiderInfo, Legs::Vector{Vector{ComplexF64}})
     
     for ii in 2:n-1
         #first find the right half plane preimage of the shoulder
-        u = sqrt(Legs[ii+1][1]./λ)
+        u = sqrt(S.legs[ii+1][1]./λ)
         thetau = (angle(u)/(2*pi)+1)%1
 
         if a/2 < thetau && thetau < (a+1)/2 #thetau is in the connected region
             if S.kneading_sequence[ii] == cregion #then this is the correct preimage
-                newLegs[ii] = path_sqrt(Legs[ii+1]./λ)
+                newLegs[ii] = path_sqrt(S.legs[ii+1]./λ)
             else
-                newLegs[ii] = -1 .* path_sqrt(Legs[ii+1]./λ)
+                newLegs[ii] = -1 .* path_sqrt(S.legs[ii+1]./λ)
             end
         else #thetau is in the disconnected region
             if S.kneading_sequence[ii] == dregion #then this is the correct preimage
-                newLegs[ii] = path_sqrt(Legs[ii+1]./λ)
+                newLegs[ii] = path_sqrt(S.legs[ii+1]./λ)
             else
-                newLegs[ii] =  -1 .* path_sqrt(Legs[ii+1]./λ)
+                newLegs[ii] =  -1 .* path_sqrt(S.legs[ii+1]./λ)
             end
         end
     end
 
     #we will break into periodic and preperiodic cases for the last leg
-    if S.preperiod == 0 #periodic
-        u = sqrt(Legs[1][1]./λ)
+    if S.orbit.preperiod == 0 #periodic
+        u = sqrt(S.legs[1][1]./λ)
         thetau = (angle(u)/(2*pi)+1)%1
         
         if abs2(thetau - a/2) < abs2(thetau - (a+1)/2)
             if cregion == 'A'
-                if S.kneading_sequence[end] == '2'
-                    newLegs[end] = path_sqrt(Legs[1]./λ)
+                if S.kneading_sequence.items[end] == '2'
+                    newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
-                    newLegs[end] = -1 .*path_sqrt(Legs[1]./λ)
+                    newLegs[end] = -1 .*path_sqrt(S.legs[1]./λ)
                 end
             else
-                if S.kneading_sequence[end] == '1'
-                    newLegs[end] = path_sqrt(Legs[1]./λ)
+                if S.kneading_sequence.items[end] == '1'
+                    newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
-                    newLegs[end] = -1 .*path_sqrt(Legs[1]./λ)
+                    newLegs[end] = -1 .*path_sqrt(S.legs[1]./λ)
                 end
             end
         else
             if cregion == 'A'
-                if S.kneading_sequence[end] == '1'
-                    newLegs[end] = path_sqrt(Legs[1]./λ)
+                if S.kneading_sequence.items[end] == '1'
+                    newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
-                    newLegs[end] = -1 .*path_sqrt(Legs[1]./λ)
+                    newLegs[end] = -1 .*path_sqrt(S.legs[1]./λ)
                 end
             else
-                if S.kneading_sequence[end] == '2'
-                    newLegs[end] = path_sqrt(Legs[1]./λ)
+                if S.kneading_sequence.items[end] == '2'
+                    newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
-                    newLegs[end] = -1 .*path_sqrt(Legs[1]./λ)
+                    newLegs[end] = -1 .*path_sqrt(S.legs[1]./λ)
                 end
             end
         end
 
     else #preperiodic
         p = S.preperiod 
-        u = sqrt(Legs[p+1][1]./λ)
+        u = sqrt(S.legs[p+1][1]./λ)
         thetau = (angle(u)/(2*pi)+1)%1
 
         if a/2 < thetau && thetau < (a+1)/2 #thetau is in the connected region
-            if S.kneading_sequence[end] == cregion #then this is the correct preimage
-                newLegs[end] = path_sqrt(Legs[p+1]./λ)
+            if S.kneading_sequence.items[end] == cregion #then this is the correct preimage
+                newLegs[end] = path_sqrt(S.legs[p+1]./λ)
             else
-                newLegs[end] = -1 .* path_sqrt(Legs[p+1]./λ)
+                newLegs[end] = -1 .* path_sqrt(S.legs[p+1]./λ)
             end
         else #thetau is in the disconnected region
-            if S.kneading_sequence[end] == dregion #then this is the correct preimage
-                newLegs[end] = path_sqrt(Legs[p+1]./λ)
+            if S.kneading_sequence.items[end] == dregion #then this is the correct preimage
+                newLegs[end] = path_sqrt(S.legs[p+1]./λ)
             else
-                newLegs[end] = -1 .* path_sqrt(Legs[p+1]./λ)
+                newLegs[end] = -1 .* path_sqrt(S.legs[p+1]./λ)
             end
         end
     end
@@ -161,18 +164,17 @@ function spidermap(S::SpiderInfo, Legs::Vector{Vector{ComplexF64}})
     newLegs .*= (2.0+0.0im)
 
     grow!(newLegs,10,10)
-
-    return newLegs
+    for ii in eachindex(S.legs)
+        S.legs[ii] = copy(newLegs[ii]) #done in this way so we can mutate S without mutating S
+    end
+    return S
 end
         
-function spideriterate(angle::Rational,frames::Int)
-    info = SpiderInfo(angle)
+function spideriterates(S0::Spider,n_iter::Int)
+    list = [deepcopy(S0)]
 
-    list = [standardlegs(angle)]
-
-    for i in 1:frames-1
-        SL = list[end]
-        push!(list,spidermap(info,SL))
+    for i in 1:n_iter
+        push!(list,deepcopy(mapspider!(S0)))
     end
-    return list[end][2][end]/2
+    return list
 end
