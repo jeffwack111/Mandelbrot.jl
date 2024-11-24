@@ -12,7 +12,8 @@ function Makie.plot!(myplot::SpiderPlot)
         lines!(myplot, real(leg),imag(leg),color = get(ColorSchemes.viridis, float(j)/float(n)))
         text!(myplot, real(leg[end]),imag(leg[end]);text = "$j")
     end
-    limits!(-6,4,-4,4)
+    r = 6
+    limits!(-r-1,r-1,-r,r)
     #why can we use the above function but cannot do other things like hidespines?
     return myplot
 end
