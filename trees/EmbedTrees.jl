@@ -9,7 +9,8 @@ function embednodes(OHT::OrientedHubbardTree)
     criticalorbit = orbit(OHT.zero) #This is a sequence orbit
 
     theta = angleof(first(criticalanglesof(OZ,OHT)))
-    c = spideriterate(theta,250)
+    c = parameter(standardspider(theta),250)
+    print(c)
 
     #critical orbit
     rays = Dict()

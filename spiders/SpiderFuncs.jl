@@ -1,4 +1,4 @@
-using IterTools 
+using IterTools  
 
 function region(point::Complex,boundary::Vector{<:Complex})
     x2 = real(point)
@@ -140,4 +140,7 @@ function test_intersection(z1::Complex,z2::Complex,w1::Complex,w2::Complex)
 
 end
 
+#function angle(z1::Complex,z2::Complex,z3::Complex)
+    #calculate the angle at z2 formed by the segments (z1,z2) and (z2,z3)
+#end
 

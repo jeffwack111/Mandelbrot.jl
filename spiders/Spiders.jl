@@ -178,3 +178,12 @@ function spideriterates(S0::Spider,n_iter::Int)
     end
     return list
 end
+
+#TODO modify below to have tolerance-based convergence behavior
+function parameter(S0::Spider,n_iter::Int)
+    S = deepcopy(S0)
+    for ii in 1:n_iter
+        mapspider!(S)
+    end
+    return S.legs[2][end]/2
+end

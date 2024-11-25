@@ -5,7 +5,6 @@ include("EmbedTrees.jl")
 include("../spiders/Spiders.jl")
 include("../parameters/DynamicRays.jl")
 
-
 ### Convenience functions
 function plottree!(scene,angle::Rational)
     return plottree!(scene,OrientedHubbardTree(angle))
