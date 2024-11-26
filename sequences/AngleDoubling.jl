@@ -244,10 +244,8 @@ function denominators(S::Vector{Int})
         orb = p(r)
         if S[k] in orb
             qk = (S[k+1] - r)/S[k] + 1
-
         else
             qk = (S[k+1] - r)/S[k] + 2
-
         end
         push!(q,qk)
     end
@@ -291,5 +289,16 @@ function period(theta::Rational)
     return period(orbit(theta))
 end
 
+function num_choices(D)
+    return prod([d - 1 for d in D])
+end
 
+function num_angles(K)
+    intadd = internaladdress(K)
+    D = denominators(intadd)
+    return num_choices(D)
+end
 
+function num_partners(theta)
+    return num_angles(kneadingsequence(theta))
+end
