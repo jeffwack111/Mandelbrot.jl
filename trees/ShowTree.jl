@@ -1,36 +1,17 @@
 using GLMakie
-include("HubbardTrees.jl")
-include("OrientTrees.jl")
 include("EmbedTrees.jl")
 include("../spiders/Spiders.jl")
 include("../parameters/DynamicRays.jl")
+include("../parameters/RenderFractal.jl")
 
-### Convenience functions
-function plottree!(scene,angle::Rational)
-    return plottree!(scene,OrientedHubbardTree(angle))
+@recipe(TreePlot,EHT) do scene #TODO add kwargs to toggle plotting the julia set and the external rays
+    Theme()
 end
 
-function plottree!(scene,K::Sequence)
-    return plottree!(scene,HubbardTree(K))
-end
+function Makie.plot!(myplot::TreePlot)
+    (EdgeList,Nodes) = adjlist(EHT.adj)
+    criticalorbit = orbit(EHT.zero)
 
-function plottree(H)
-    fig = Figure()
-    ax = Axis(fig[1,1])
-    return (fig,plottree!(ax,H))
-end
-###
-
-
-function plottree!(scene, OHT::OrientedHubbardTree,steps = 8,colors = [])
-    OZ = labelonezero(OHT)
-
-    anglelist = allanglesof(OZ,OHT)
-
-    (EdgeList,Nodes) = adjlist(OHT.adj)
-
-    criticalorbit = orbit(OHT.zero)
-    
     labels = []
     nodecolors = []
     for node in Nodes
@@ -38,19 +19,19 @@ function plottree!(scene, OHT::OrientedHubbardTree,steps = 8,colors = [])
         if firstchar == '*'
             push!(nodecolors,"black")
         elseif firstchar == 'A' #we are fully in one of the 4 regions
-            if OZ[node] == '0'
+            if EHT.onezero[node] == '0'
                 push!(nodecolors,"blue")
-            elseif OZ[node] == '*'
+            elseif EHT.onezero[node] == '*'
                 push!(nodecolors,"turquoise")
-            elseif OZ[node] == '1'
+            elseif EHT.onezero[node] == '1'
                 push!(nodecolors,"green")
             end
         elseif firstchar == 'B'
-            if OZ[node] == '0'
+            if EHT.onezero[node] == '0'
                 push!(nodecolors,"red")
-            elseif OZ[node] == '*'
+            elseif EHT.onezero[node] == '*'
                 push!(nodecolors,"orangered2")
-            elseif OZ[node] == '1'
+            elseif EHT.onezero[node] == '1'
                 push!(nodecolors,"orange")
             end
         end
@@ -65,22 +46,16 @@ function plottree!(scene, OHT::OrientedHubbardTree,steps = 8,colors = [])
         end
     end
 
-    zvaluedict = embednodes(OHT)
-    zvalues = []
-    for node in Nodes
-        push!(zvalues,zvaluedict[node])
-    end
+    zvalues = [EHT.vertices[node] for node in Nodes]
 
-    E = refinedtree(OHT,zvaluedict,steps)
-
-    pos = Point.(real.(zvalues)/2,imag.(zvalues)/2) #divide by 2 here for the scene coordinate system
+    pos = Point.(real.(zvalues),imag.(zvalues)) 
 
     colorsforinterior = ["red","blue","green","orange"]
 
     for (ii,p) in enumerate(EdgeList)
         for n in p
-            cmplxedge = E[Set([Nodes[ii],Nodes[n]])][2]
-            realedge = Point.(real.(cmplxedge)/2,imag.(cmplxedge)/2) 
+            cmplxedge = EHT.edges[Set([Nodes[ii],Nodes[n]])][2]
+            realedge = Point.(real.(cmplxedge),imag.(cmplxedge)) 
             if nodecolors[ii] in colorsforinterior 
                 col = nodecolors[ii]
             elseif nodecolors[n] in colorsforinterior
@@ -90,16 +65,27 @@ function plottree!(scene, OHT::OrientedHubbardTree,steps = 8,colors = [])
             elseif nodecolors[n] !== "black" 
                 col = nodecolors[n]
             end
-            lines!(scene,realedge,color = col,linewidth = 1,transparency = true,overdraw = true)
+            lines!(myplot,realedge,color = col,linewidth = 1,transparency = true,overdraw = true)
         end
     end
 
-    scatter!(scene,pos,color = nodecolors)
+    julia = inverseiterate(EHT.parameter,20)
+    scatter!(myplot,real(julia),imag(julia),markersize = 1,color = "black")
+
+
+    rays = collect(values(EHT.rays))
+    n = length(rays)
+    for (j ,ray) in enumerate(rays)
+        lines!(myplot,real(ray),imag(ray),color = get(ColorSchemes.rainbow, float(j)/float(n)))
+    end
+
+    scatter!(myplot,pos,color = nodecolors)
     tex = [node[2] for node in labels]
-    text!(scene,pos,text = tex)
-    
-    return scene
+    text!(myplot,pos,text = tex)
+    limits!(-2,2,-2,2)
+    return myplot
 end
+
 
 function plottree!(scene, H::HubbardTree)
 

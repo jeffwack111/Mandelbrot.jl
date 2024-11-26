@@ -2,7 +2,20 @@ include("OrientTrees.jl")
 include("../spiders/Spiders.jl")
 include("../parameters/DynamicRays.jl")
 
-function embednodes(OHT::OrientedHubbardTree)
+struct EmbeddedHubbardTree
+    zero::Sequence
+    adj::Dict{Sequence,Vector{Sequence}}
+    boundary::Vector{Sequence}
+    onezero::Dict{Sequence{Char}, Char}
+    angle::Rational
+    rays::Dict{Rational,Vector{ComplexF64}}
+    parameter::ComplexF64
+    vertices::Dict{Sequence, ComplexF64} #maps each vertex in the tree to a point in the plane
+    edges::Dict{Set{Sequence{Char}}, Tuple{Sequence{Char}, Vector{ComplexF64}}} #maps each edge to an oriented polyline
+end
+
+function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
+
     OZ = labelonezero(OHT)
     anglelist = allanglesof(OZ,OHT)
 
@@ -50,24 +63,27 @@ function embednodes(OHT::OrientedHubbardTree)
         end
     end
 
-    return zvalues
+    E = standardedges(OHT.adj,OHT.zero,zvalues)
+    return EmbeddedHubbardTree(OHT.zero,OHT.adj,OHT.boundary,OZ,theta,rays,c,zvalues,E)
 end
 
-function standardedges(OHT::OrientedHubbardTree,zvalues)
-    edges = edgeset(OHT.adj)
+function standardedges(adj,zero,zvalues)
+    edges = edgeset(adj)
 
     edgevectors = []
     for edge in edges
-        start = first(filter(z -> z!= OHT.zero,edge))
+        start = first(filter(z -> z!= zero,edge))
         finish = first(filter(z -> z!= start,edge))
         push!(edgevectors,Pair(edge,(start,[zvalues[start],zvalues[finish]])))
     end
     return Dict(edgevectors)
 end
 
-function longpath(OHT, edgevectors, start, finish)
-    nodes = nodepath(OHT.adj, start, finish)
-    edges = edgepath(OHT.adj, start, finish)
+function longpath(EHT, start, finish)
+    nodes = nodepath(EHT.adj, start, finish)
+    edges = edgepath(EHT.adj, start, finish)
+
+    edgevectors = EHT.edges
 
     segments = [edgevectors[edge][2] for edge in edges]
 
@@ -107,13 +123,14 @@ function refinedtree(OHT,zvalues,steps)
     return E
 end
 
-function refinetree(OHT,c,edgevectors)
+function refinetree!(EHT::EmbeddedHubbardTree)
+
     newedges = []
-    for edge in keys(edgevectors)
-        start = edgevectors[edge][1]
+    for edge in keys(EHT.edges)
+        start = EHT.edges[edge][1]
         finish = first(filter(x->x!=start,edge))
         #determine the image of this edge
-        image = longpath(OHT,edgevectors,shift(start),shift(finish))
+        image = longpath(EHT,shift(start),shift(finish))
 
         refinedimage = [image[1]]
         for point in image[2:end]
@@ -121,15 +138,16 @@ function refinetree(OHT,c,edgevectors)
             push!(refinedimage,point)
         end
 
+        c = EHT.parameter
         x = sqrt(-c + refinedimage[1])
 
-        if abs2(x-edgevectors[edge][2][1]) < abs2(-x-edgevectors[edge][2][1])
-            push!(newedges,Pair(edge,(start,path_sqrt(-c .+ refinedimage))))
+        if abs2(x-EHT.edges[edge][2][1]) < abs2(-x-EHT.edges[edge][2][1])
+            EHT.edges[edge] = (start,path_sqrt(-c .+ refinedimage))
         else
-            push!(newedges,Pair(edge,(start,-path_sqrt(-c .+ refinedimage))))
+            EHT.edges[edge] = (start,-path_sqrt(-c .+ refinedimage))
         end
     end
-    return Dict(newedges)
+    return EHT
 end
 
 function plotedges!(scene,edgevectors)
