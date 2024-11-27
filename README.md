@@ -1,5 +1,3 @@
 # Spiders
-Go look at the wiki
 
-jeffwack111@gmail.com
-
+[![Build Status](https://github.com/jeffwack111/Spiders.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/jeffwack111/Spiders.jl/actions/workflows/CI.yml?query=branch%3Amain)
