@@ -1,5 +1,5 @@
 include("../sequences/AngleDoubling.jl")
-include("../spiders/SpiderFuncs.jl")
+include("../spidermap/SpiderFuncs.jl")
 
 struct ExternalRays
     orb::Sequence{Rational}

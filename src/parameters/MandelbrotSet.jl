@@ -1,5 +1,5 @@
 include("RenderFractal.jl")
-include("../spiders/Spiders.jl")
+include("../spidermap/SpiderMap.jl")
 include("../trees/OrientTrees.jl")
 using ColorSchemes 
 

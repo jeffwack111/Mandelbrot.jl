@@ -1,5 +1,5 @@
 include("OrientTrees.jl")
-include("../spiders/Spiders.jl")
+include("../spidermap/SpiderMap.jl")
 include("../parameters/DynamicRays.jl")
 
 struct EmbeddedHubbardTree

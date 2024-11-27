@@ -1,6 +1,6 @@
 using GLMakie
 using ColorSchemes
-include("Spiders.jl")
+include("SpiderMap.jl")
 
 @recipe(SpiderPlot,S) do scene
     Theme()

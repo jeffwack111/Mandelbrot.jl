@@ -1,7 +1,7 @@
 using GLMakie
 using ColorSchemes
 include("EmbedTrees.jl")
-include("../spiders/Spiders.jl")
+include("../spidermap/SpiderMap.jl")
 include("../parameters/DynamicRays.jl")
 include("../parameters/RenderFractal.jl")
 
@@ -10,8 +10,8 @@ include("../parameters/RenderFractal.jl")
 end
 
 function Makie.plot!(myplot::TreePlot)
-    (EdgeList,Nodes) = adjlist(EHT.adj)
-    criticalorbit = orbit(EHT.zero)
+    (EdgeList,Nodes) = adjlist(myplot.EHT[].adj)
+    criticalorbit = orbit(myplot.EHT[].zero)
 
     labels = []
     nodecolors = []
