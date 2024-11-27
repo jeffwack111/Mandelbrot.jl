@@ -180,10 +180,21 @@ function spideriterates(S0::Spider,n_iter::Int)
 end
 
 #TODO modify below to have tolerance-based convergence behavior
-function parameter(S0::Spider,n_iter::Int)
+function parameter(S0::Spider,max_iter::Int)
     S = deepcopy(S0)
-    for ii in 1:n_iter
+    c_last = S.legs[2][end]/2 
+    for ii in 1:max_iter
         mapspider!(S)
+        c = S.legs[2][end]/2
+        println(repr(c)*" delta "*repr(abs(c-c_last)))
+        if abs(c-c_last)<(1e-15)
+            return c
+        end
+        c_last = c
     end
-    return S.legs[2][end]/2
+    return S.legs[2][end]/2 
+end
+
+function parameter(theta::Rational,max_iter::Int)
+    return parameter(standardspider(theta),max_iter)
 end

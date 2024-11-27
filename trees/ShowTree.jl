@@ -1,4 +1,5 @@
 using GLMakie
+using ColorSchemes
 include("EmbedTrees.jl")
 include("../spiders/Spiders.jl")
 include("../parameters/DynamicRays.jl")

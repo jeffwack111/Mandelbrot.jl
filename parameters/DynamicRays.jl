@@ -1,9 +1,14 @@
-using GLMakie
-using ColorSchemes
 include("../sequences/AngleDoubling.jl")
 include("../spiders/SpiderFuncs.jl")
 
-## Conjecture: if the collection of rays is a sequence of rays, we will not need this function
+struct ExternalRays
+    orb::Sequence{Rational}
+    rays::Dict{Rational,Vector{ComplexF64}}
+    parameter::Complex
+end
+
+## Conjecture: if the collection of rays is a sequence of rays, we will not need this function.
+## Question: Is it possible to update the rays in a mutating and not problematic way?
 function goesto(seq::Sequence)
     l = seq.preperiod
     k = period(seq)
@@ -11,14 +16,33 @@ function goesto(seq::Sequence)
     return [(seq.items[x],seq.items[y]) for (x,y) in enumerate(idx)]
 end 
 
-### DANGER ###
-#copy and pasted from HubbardTrees.jl
-#similar to above function?
-#=
-function forwardimages(htree::Dict)
-    return Dict([Pair(key,[shift(key)]) for key in keys(htree)])
-end 
-=#
+function standardrays(theta::Rational,c::Complex,R::Real,res::Int)
+    orb = orbit(theta)
+    radii = collect(LinRange(R,sqrt(R),res))
+    rays = Dict([Pair(phi,exp(2im*pi*phi).*radii) for phi in orb.items])
+    return ExternalRays(orb,rays,c)
+end
+
+function extend!(Ext::ExternalRays)
+    for (target,source) in goesto(rays)
+        z = source[end-res+1]
+        a = sqrt(-c + z)
+        b = -sqrt(-c + z)
+
+        da = abs2(target[end]-a)
+        db = abs2(target[end]-b)
+
+        if da < db
+            append!(target,path_sqrt(-c .+ source[end-res+1:end]))
+        elseif db < da
+            append!(target,-1 .* path_sqrt(-c .+ source[end-res+1:end]))
+        else
+            return error("can't decide what to glue")
+        end     
+    end
+    return Ext
+end
+
 
 function dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
     orb = orbit(angle)

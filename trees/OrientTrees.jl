@@ -1,4 +1,4 @@
-include("HubbardTrees.jl")
+include("HubbardTrees.jl") 
 
 struct OrientedHubbardTree <: AbstractHubbardTree
     zero::Sequence

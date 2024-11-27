@@ -23,7 +23,7 @@ function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
 
     theta = angleof(first(criticalanglesof(OZ,OHT)))
     c = parameter(standardspider(theta),250)
-    print(c)
+    println(c)
 
     #critical orbit
     rays = Dict()
@@ -37,8 +37,8 @@ function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
     for node in keys(OHT.adj)
         for angle in anglelist[node]
             if !(angle in keys(rays))
-                theta = angleof(angle)
-                push!(rays,Pair(theta,dynamicrays(c,theta,100,10,20)[theta]))
+                phi = angleof(angle)
+                push!(rays,Pair(phi,dynamicrays(c,phi,100,10,20)[phi]))
             end
         end
     end
@@ -48,9 +48,11 @@ function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
 
     paramorbit = [0.0+0.0im]
     n = period(theta)
+    #println(n)
     for ii in 1:n-1
         push!(paramorbit,paramorbit[end]^2+c)
     end
+    #println(paramorbit)
 
     zvalues = Dict{Sequence,ComplexF64}()
     for node in keys(OHT.adj)
@@ -62,9 +64,12 @@ function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
             push!(zvalues,Pair(node,sum(list)/length(list)))
         end
     end
-
     E = standardedges(OHT.adj,OHT.zero,zvalues)
     return EmbeddedHubbardTree(OHT.zero,OHT.adj,OHT.boundary,OZ,theta,rays,c,zvalues,E)
+end
+
+function Base.show(io::IO,H::EmbeddedHubbardTree)
+    return println(io,"Embedded Hubbard tree of "*repr(H.angle)*" with "*repr(length(keys(H.adj)))*" vertices")
 end
 
 function standardedges(adj,zero,zvalues)
@@ -196,4 +201,9 @@ function showtree(angle::Rational)
 end
     
 
-
+function angleclusters(H::OrientedHubbardTree)
+    charset = characteristicset(H)
+    allangles = allanglesof(H)
+    anglegroups = [allangles[branch] for branch in charset]
+    return anglegroups
+end
