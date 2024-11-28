@@ -103,19 +103,6 @@ function shiftby(seq::Sequence,n::Int)
     end
 end
 
-function orbit(seq::Sequence)
-    items = Sequence[]
-
-    while isempty(findall(x->x==seq,items))
-        push!(items,seq)
-        seq = shift(seq)
-    end
-
-    preperiod = findall(x->x==seq,items)[1] - 1
-
-    return Sequence{Sequence}(items,preperiod)
-end
-
 function divisors(n)
     d = Int64[1]
     for (p, e) in factor(n)
@@ -129,15 +116,6 @@ function divisors(n)
         end
     end
     return sort(d)
-end
-
-function agrees(K::Sequence,str::String)
-    for (ii,item) in enumerate(str)
-        if item !== K[ii] 
-            return false
-        end
-    end
-    return true
 end
 
 function prepend(K::Sequence,thing)

@@ -10,8 +10,9 @@ include("../parameters/RenderFractal.jl")
 end
 
 function Makie.plot!(myplot::TreePlot)
-    (EdgeList,Nodes) = adjlist(myplot.EHT[].adj)
-    criticalorbit = orbit(myplot.EHT[].zero)
+    EHT = myplot.EHT[]
+    (EdgeList,Nodes) = adjlist(EHT.adj)
+    criticalorbit = orbit(EHT.zero)
 
     labels = []
     nodecolors = []

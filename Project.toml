@@ -1,7 +1,7 @@
 name = "Spiders"
 uuid = "52854307-bbd1-4ac7-933f-adc0936abe8a"
 authors = ["Jeffrey Wack"]
-version = "1.0.0-DEV"
+version = "0.1.0-alpha"
 
 [compat]
 julia = "1.6.7"

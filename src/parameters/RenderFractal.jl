@@ -104,7 +104,6 @@ function escapeorconverge(Radius::Real)
 end
 
 
-
 function julia_patch(center::Complex, right_center::Complex)
     #Overall strategy: 
     #we will first compute the patch at the correct scale and orientation, centered at the origin

@@ -29,6 +29,15 @@ function Base.getindex(H::HubbardTree, str::String)
     return Dict(list)
 end
 
+function agrees(K::Sequence,str::String)
+    for (ii,item) in enumerate(str)
+        if item !== K[ii] 
+            return false
+        end
+    end
+    return true
+end
+
 function HubbardTree(K::Sequence{Char})
     starK = prepend(K,'*')
     #We begin with the critical orbit

@@ -71,6 +71,19 @@ function orbit(a::Vector{Rational{Int}})
     
 end
 
+function orbit(seq::Sequence)
+    items = Sequence[]
+
+    while isempty(findall(x->x==seq,items))
+        push!(items,seq)
+        seq = shift(seq)
+    end
+
+    preperiod = findall(x->x==seq,items)[1] - 1
+
+    return Sequence{Sequence}(items,preperiod)
+end
+
 function thetaitinerary(theta::Rational,orb::Sequence)
     a = theta/2
     b = (theta+1)/2
