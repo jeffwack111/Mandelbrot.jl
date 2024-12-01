@@ -5,41 +5,10 @@
 include("../sequences/AngleDoubling.jl") 
 include("Graphs.jl")
 
-abstract type AbstractHubbardTree 
-end
+const HubbardTree = SetGraph{KneadingSequence}
 
-struct HubbardTree <: AbstractHubbardTree
-    zero::Sequence #Rename this to critical? Remove it and use H["*"] everywhere?
-    adj::Dict{Sequence,Set{Sequence}}
-end
-
-function Base.getindex(H::HubbardTree, str::String)
-    list = []
-    for (K,neighbors) in pairs(H.adj)
-        if agrees(K,str)
-            newneighbors = []
-                for N in neighbors
-                    if agrees(N,str)
-                        push!(newneighbors,N)
-                    end
-                end
-            push!(list,Pair(K,newneighbors))
-        end
-    end
-    return Dict(list)
-end
-
-function agrees(K::Sequence,str::String)
-    for (ii,item) in enumerate(str)
-        if item !== K[ii] 
-            return false
-        end
-    end
-    return true
-end
-
-function HubbardTree(K::Sequence{Char})
-    starK = prepend(K,'*')
+function HubbardTree(K::KneadingSequence)
+    starK = prepend(K,star())
     #We begin with the critical orbit
     markedpoints = copy(orbit(starK).items)
 
@@ -52,14 +21,24 @@ function HubbardTree(K::Sequence{Char})
             #println("result is $H")
         end
     end
-    return HubbardTree(starK,H)
+    return SetGraph{KneadingSequence}(H)
 end
 
-function HubbardTree(internaladdress::Vector{Int})
-    K = kneadingsequence(internaladdress)
+function HubbardTree(intadd::InternalAddress)
+    K = KneadingSequence(intadd)
     seq = copy(K.items)
-    seq[end] = '*'
-    return HubbardTree(Sequence{Char}(seq,0))
+    seq[end] = star()
+    return HubbardTree(Sequence{KneadingSymbol}(seq,0))
+end
+
+function Base.getproperty(H::HubbardTree,sym::Symbol)
+    if sym === :zero
+        return first(filter(x->x[1]==star(),H.vertices))
+    elseif sym === :vertices
+        return Set(keys(H.adj))
+    else
+        return getfield(H,sym)
+    end
 end
 
 function addsequence(Htree,Kseq,(A,Bset),newpoint)
@@ -97,7 +76,7 @@ end
 function extend(H::HubbardTree,new::Sequence)
     Z = H.zero
     K = shift(Z)
-    return HubbardTree(Z,addsequence(H.adj,K,(Z,deepcopy(H.adj[Z])),new))
+    return HubbardTree(addsequence(H.adj,K,(Z,deepcopy(H.adj[Z])),new))
 end
 
 function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
@@ -110,12 +89,12 @@ function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
         if triod[1].items[1] == triod[2].items[1] && triod[1].items[1] == triod[3].items[1]
             triod = (shift(triod[1]),shift(triod[2]),shift(triod[3]))
 
-        elseif Set([triod[1].items[1],triod[2].items[1],triod[3].items[1]]) == Set(['A','B','*']) 
-            if triod[1].items[1] == '*'
+        elseif Set([triod[1].items[1],triod[2].items[1],triod[3].items[1]]) == Set([A(),B(),star()]) 
+            if triod[1].items[1] == star()
                 middle = triodList[1][1]
-            elseif triod[2].items[1] == '*'
+            elseif triod[2].items[1] == star()
                 middle = triodList[1][2]
-            elseif triod[3].items[1] == '*'
+            elseif triod[3].items[1] == star()
                 middle = triodList[1][3]
             end
             
@@ -160,12 +139,12 @@ function majorityvote(arms::Tuple{Sequence,Sequence,Sequence})
     end
 end
 
-function majorityvote(S::Sequence)
-    newitems = Char[]
+function majorityvote(S::Sequence) 
+    newitems = KneadingSymbol[]
     for triod in S.items
         push!(newitems,majorityvote(triod))
     end
-    return Sequence{Char}(newitems,S.preperiod) 
+    return Sequence{KneadingSymbol}(newitems,S.preperiod) 
 end
 
 #This function is a wrapper for findall which throws an error if there is not exactly one element satisfying f
@@ -181,7 +160,7 @@ function findone(f,A)
 end
 
 function isbetween(htree::Dict,a,b,c)
-    zero = first(filter(x->x.items[1]=='*',keys(htree)))
+    zero = first(filter(x->x.items[1]==star(),keys(htree)))
     K = shift(zero)
     (type,vertex) = iteratetriod(K,(a,b,c))
     if type == "flat" && vertex == a
@@ -199,4 +178,29 @@ function nodepath(graph, start, finish)
         push!(path,node)  
     end
     return path
+end
+
+function Base.getindex(H::HubbardTree, str::String)
+    list = []
+    for (K,neighbors) in pairs(H.adj)
+        if agrees(K,str)
+            newneighbors = []
+                for N in neighbors
+                    if agrees(N,str)
+                        push!(newneighbors,N)
+                    end
+                end
+            push!(list,Pair(K,newneighbors))
+        end
+    end
+    return Dict(list)
+end
+
+function agrees(K::Sequence,str::String)
+    for (ii,item) in enumerate(str)
+        if item !== K[ii] 
+            return false
+        end
+    end
+    return true
 end

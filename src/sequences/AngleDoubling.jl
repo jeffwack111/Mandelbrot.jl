@@ -1,5 +1,169 @@
 include("Sequences.jl")
 
+function orbit(angle::Rational)
+    items = Rational[]
+
+    while isempty(findall(x->x==angle,items))
+        push!(items,angle)
+        angle = angle*2
+        angle = angle%1//1
+    end
+
+    preperiod = findall(x->x==angle,items)[1] - 1
+
+    return Sequence{Rational}(items,preperiod)
+    
+end
+
+abstract type KneadingSymbol end
+
+struct A <: KneadingSymbol end
+struct B <: KneadingSymbol end
+struct star <: KneadingSymbol end
+
+Base.show(io::IO, symb::A) = print(io,'A')
+Base.show(io::IO, symb::B) = print(io,'B')
+Base.show(io::IO, symb::star) = print(io,'*')
+
+const KneadingSequence = Sequence{KneadingSymbol}
+
+function KneadingSequence(angle::Rational)
+    orb = orbit(angle)
+    return thetaitinerary(angle,orb)
+end
+
+function thetaitinerary(theta::Rational,angle::Rational)
+    return thetaitinerary(theta,orbit(angle))
+end
+
+function thetaitinerary(theta::Rational,orb::Sequence)
+    a = theta/2
+    b = (theta+1)/2
+    itinerary = KneadingSymbol[]
+
+    for angle in orb.items
+        if angle == a
+            push!(itinerary,star())
+        elseif angle == b
+            push!(itinerary,star())
+        elseif angle > a && angle < b
+            push!(itinerary,A())
+        else
+            push!(itinerary,B())
+        end
+    end
+    
+    return Sequence{KneadingSymbol}(itinerary,orb.preperiod)
+end
+
+function Base.show(io::IO, K::KneadingSequence)
+    str = join([repr(item) for item in K.items])
+    L = K.preperiod
+    if L == 0
+        return println(io,"|"*str*"|")
+    else
+        return println(io,str[1:L]*"|"*str[L+1:end]*"|")
+    end
+end
+
+struct InternalAddress
+    addr::Vector{Int}
+end
+
+function Base.length(intadd::InternalAddress)
+    return length(intadd.addr)
+end
+
+function Base.getindex(intadd::InternalAddress,n::Int)
+    return intadd.addr[n]
+end
+
+#TreesBook pg 21 def 2.2
+function rho(K::KneadingSequence)
+    function rho_nu(n::Int)
+        if K.preperiod == 0 && mod(n,K.period) == 0
+            return Inf
+        end
+        q = n+1 
+        while K[q] == K[q-n]
+            q = q+1
+        end
+        return q
+    end
+    return rho_nu
+end
+
+#works only for strictly periodic kneading sequences
+function rhosequence(K::KneadingSequence,n::Int)
+    if K.preperiod == 0
+        seq = Vector{Int}([n])
+        rho_nu = rho(K)
+        while rho_nu(seq[end]) !== Inf
+            append!(seq,rho_nu(seq[end]))
+        end
+        return seq
+    else
+        error("cant deal with preperiodic")
+    end
+end
+
+function InternalAddress(K::KneadingSequence)
+    return InternalAddress(rhosequence(K,1))
+end
+
+#Works only for finite internal addresses
+function KneadingSequence(intadd::InternalAddress)
+    address = copy(intadd.addr)
+    if address == [1]
+        return Sequence{KneadingSymbol}(KneadingSymbol[A()],0)
+    else
+        s = pop!(address)
+        K = KneadingSequence(InternalAddress(address))
+        R = K.items[mod1.(1:s-1,end)]
+        if K.items[mod1(s,end)] == A()
+            push!(R,B())
+        else
+            push!(R,A())
+        end
+        return Sequence{KneadingSymbol}(R,0)
+    end
+end
+
+function admissible(K::KneadingSequence,m::Int)
+    rho_nu = rho(K)
+    if m in InternalAddress(K).addr
+        return true
+    else
+        for k in 1:m-1
+            if mod(m,k) == 0 && rho_nu(k) > m
+                return true
+            end
+        end
+        if rho_nu(m) != Inf
+            for r in 1:m
+                if mod(r,m) == mod(rho_nu(m),m) && ! (m in rhosequence(K,r))
+                    return true
+                end
+            end
+        end
+        return false
+    end
+end
+
+#Lemma 5.4 page 43 TreesBook
+function admissible(K::KneadingSequence)
+    for m in 1:K.period
+        if !admissible(K,m)
+            return (false,m)
+        end
+    end
+    return true
+end
+
+function admissible(intadd::InternalAddress)
+    return admissible(KneadingSequence(intadd))
+end
+
 struct AngledInternalAddress
     addr::Vector{Int}
     angles::Vector{Rational}
@@ -7,7 +171,7 @@ end
 
 #Lemma 11.14 TreesBook page 146
 function AngledInternalAddress(theta::Rational)
-    intadd = internaladdress(theta)
+    intadd = InternalAddress(KneadingSequence(theta))
     denoms = denominators(intadd)
     angles = Rational[]
 
@@ -21,7 +185,7 @@ function AngledInternalAddress(theta::Rational)
         push!(angles,n//denoms[ii])
     end
 
-    return AngledInternalAddress(intadd, angles)
+    return AngledInternalAddress(intadd.addr, angles)
 
 end
 
@@ -43,21 +207,7 @@ function nextaddress(AIA::AngledInternalAddress)
     #give the next valid internal address, going counterclockwise
 end
 
-function orbit(angle::Rational)
-    items = Rational[]
-
-    while isempty(findall(x->x==angle,items))
-        push!(items,angle)
-        angle = angle*2
-        angle = angle%1//1
-    end
-
-    preperiod = findall(x->x==angle,items)[1] - 1
-
-    return Sequence{Rational}(items,preperiod)
-    
-end
-
+#what is this for?
 function orbit(a::Vector{Rational{Int}})
     items = Vector{Rational}[]
     while isempty(findall(x->x==a,items))
@@ -84,177 +234,18 @@ function orbit(seq::Sequence)
     return Sequence{Sequence}(items,preperiod)
 end
 
-function thetaitinerary(theta::Rational,orb::Sequence)
-    a = theta/2
-    b = (theta+1)/2
-    itinerary = Char[]
-
-    for angle in orb.items
-        if angle == a
-            push!(itinerary,'*')
-        elseif angle == b
-            push!(itinerary,'*')
-        elseif angle > a && angle < b
-            push!(itinerary,'A')
-        else
-            push!(itinerary,'B')
-        end
-    end
-    
-    return Sequence{Char}(itinerary,orb.preperiod)
-end
-
-function thetaitinerary(theta::Rational,angle::Rational)
-    return thetaitinerary(theta,orbit(angle))
-end
-
-function kneadingsequence(angle::Rational)
-    orb = orbit(angle)
-    return thetaitinerary(angle,orb)
-end
-
-function binary(theta::Rational)
-    
-    orb = orbit(theta)
-    itinerary = Char[]
-    for theta in orb.items
-        if theta < 1//2
-            push!(itinerary,'0')
-        else
-            push!(itinerary,'1')
-        end
-    end
-    return Sequence{Char}(collect(itinerary),orb.preperiod)
-
-end
-
-
-#this better be a sequence of 1s and 0s
-function angleof(binary::Sequence)
-    theta = 0//1
-    k = period(binary)
-    r = 1//(1//1-(2//1)^-k)
-    for (ii,digit) in enumerate(binary.items)
-        if digit=='1' 
-            if  ii<=binary.preperiod
-                theta += (2//1)^(-ii)
-            else 
-                theta += r*(2//1)^(-ii)
-            end
-        end
-    end
-    return theta
-end
-
-function angleof(digs::String)
-    return angleof(Sequence{Char}(collect(digs),0))
-end
-
-
-function rho(kneadingsequence::Sequence,n::Int)
-    if kneadingsequence.preperiod == 0 && mod(n,period(kneadingsequence)) == 0
-        return Inf
-    end
-    k = n+1 
-    while kneadingsequence[k] == kneadingsequence[k-n]
-        k = k+1
-    end
-    return k
-end
-
-function rhoSequence(kneadingsequence::Sequence,n::Int) 
-    if kneadingsequence.preperiod == 0
-        seq = Int[n]
-        while rho(kneadingsequence,seq[end]) !== Inf
-            append!(seq,rho(kneadingsequence,seq[end]))
-        end
-        return seq
-    else
-        error("cant deal with preperiodic")
-    end
-end
-
-function rhoSequence(K::Sequence)
-    function r(n::Int)
-        return rhoSequence(K,n)
-    end
-    return r
-end
-
-#works only for strictly periodic kneading sequences
-function internaladdress(K::Sequence)
-    return rhoSequence(K,1)
-end
-
-function internaladdress(theta::Rational)
-    return rhoSequence(kneadingsequence(theta),1)    
-end
-
-#Works only for finite internal addresses
-function kneadingsequence(intadd::Vector{Int})
-    internaladdress = copy(intadd)
-    if internaladdress == [1]
-        return Sequence{Char}(['A'],0)
-    else
-        s = pop!(internaladdress)
-        K = kneadingsequence(internaladdress)
-        R = K.items[mod1.(1:s-1,end)]
-        if K.items[mod1(s,end)] == 'A'
-            push!(R,'B')
-        else
-            push!(R,'A')
-        end
-        return Sequence{Char}(R,0)
-    end
-end
-
-function admissible(kneadingsequence::Sequence,m::Int)
-    if m in internaladdress(kneadingsequence)
-        return true
-    else
-        for k in 1:m-1
-            if mod(m,k) == 0 && rho(kneadingsequence,k) > m
-                return true
-            end
-        end
-        if rho(kneadingsequence, m) != Inf
-            for r in 1:m
-                if mod(r,m) == mod(rho(kneadingsequence, m),m) && ! (m in rhoSequence(kneadingsequence,r))
-                    return true
-                end
-            end
-        end
-        return false
-    end
-end
-
-#Lemma 5.4 page 43 TreesBook
-function admissible(K::Sequence)
-    for m in 1:period(K)
-        if !admissible(K,m)
-            return (false,m)
-        end
-    end
-    return true
-end
-
-function admissible(intadd::Vector{Int})
-    return admissible(kneadingsequence(intadd))
-end
-
 #TreesBook pg 145
-function denominators(S::Vector{Int})
+function denominators(S::InternalAddress)
     n = length(S) - 1
     #the last entry has no angle #page 143
 
-    K = kneadingsequence(S)
-    p = rhoSequence(K)
+    K = KneadingSequence(S)
 
     q = Int[]
 
     for k in 1:n
         r = mod1(S[k+1],S[k])
-        orb = p(r)
+        orb = rhosequence(K,r)
         if S[k] in orb
             qk = (S[k+1] - r)/S[k] + 1
         else
@@ -299,7 +290,7 @@ function numembeddings(theta::Rational)
 end
 
 function period(theta::Rational)
-    return period(orbit(theta))
+    return orbit(theta).period
 end
 
 function num_choices(D)
@@ -314,4 +305,49 @@ end
 
 function num_partners(theta)
     return num_angles(kneadingsequence(theta))
+end
+
+struct Digit{N} <: Integer
+    value::Int
+    function Digit{N}(value::Int) where N
+        m = N-1
+        0 <= value < N || error("Value must be in range [0, $m]")
+        new{N}(value)
+    end
+end
+
+Base.show(io::IO, d::Digit{N}) where {N} = print(io, d.value)
+Base.Int(d::Digit{N}) where {N} = d.value
+
+const BinaryExpansion = Sequence{Digit{2}}
+
+function BinaryExpansion(theta::Rational)    
+    orb = orbit(theta)
+    itinerary = Digit{2}[]
+    zero = Digit{2}(0)
+    one = Digit{2}(1)
+    for theta in orb.items
+        if theta < 1//2
+            push!(itinerary,zero)
+        else
+            push!(itinerary,one)
+        end
+    end
+    return Sequence{Digit{2}}(collect(itinerary),orb.preperiod)
+end
+
+function Rational(bits::BinaryExpansion)
+    theta = 0//1
+    k = bits.period
+    r = 1//(1//1-(2//1)^-k)
+    for (ii,digit) in enumerate(bits.items)
+        if digit==Digit{2}(1)
+            if  ii<=bits.preperiod
+                theta += (2//1)^(-ii)
+            else 
+                theta += r*(2//1)^(-ii)
+            end
+        end
+    end
+    return theta
 end

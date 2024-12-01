@@ -1,47 +1,38 @@
 include("HubbardTrees.jl") 
 
-struct OrientedHubbardTree <: AbstractHubbardTree
-    zero::Sequence
-    adj::Dict{Sequence,Vector{Sequence}}
-    boundary::Vector{Sequence}
-end
+const OrientedHubbardTree = OrientedGraph{KneadingSequence}
 
-function Base.show(io::IO,H::OrientedHubbardTree)
-    println(io,"Oriented Hubbard tree with adjacency dictionary")
-    return display(H.adj)
-end
-
-function forwardimages(htree::Dict)
+function forwardimages(htree)
     return Dict([Pair(key,[shift(key)]) for key in keys(htree)])
 end 
 
-function preimages(htree::Dict)
+function preimages(htree)
     fimages = forwardimages(htree)
     return  Dict([Pair(key,filter(x -> key in fimages[x],keys(htree))) for key in keys(htree)])
 end
 
-function forwardorbit(htree::Dict,start)
+function forwardorbit(htree,start)
     return component(forwardimages(htree), start)
 end
 
-function backwardsorbit(htree::Dict, start)
+function backwardsorbit(htree, start)
     return component(preimages(htree), start)
 end
 
-function grandorbit(htree::Dict, start)
+function grandorbit(htree, start)
     dynamicadjacency = mergewith(append!,forwardimages(htree),preimages(htree))
     p = component(dynamicadjacency, start)
     return Set(push!(p.second,p.first))
 end
 
-function dynamiccomponents(htree::Dict)
+function dynamiccomponents(htree)
     return Set([grandorbit(htree,x) for x in keys(htree)])
 end
 
 #Then there are a unique point z ∈ {zk}n k=1 and two different components of T \ {z}
 #such that the critical value is contained in one component and 0 and all other points
 #zk not= z are in the other one
-function ischaracteristic(htree::AbstractHubbardTree,periodicpoint)
+function ischaracteristic(htree,periodicpoint)
     glarms = globalarms(htree.adj,periodicpoint)
 
     if length(collect(keys(glarms))) < 3
@@ -74,10 +65,10 @@ end
 #This checks too many points with ischaracteristic. 
 #The orbits of the tree should be divided up first, 
 #then one characteristic point is found for each orbit
-function characteristicset(H::AbstractHubbardTree)
+function characteristicset(H)
     nodes = collect(keys(H.adj))
     periodicnodes = filter(x -> x.preperiod == 0 , nodes)
-    C = Sequence{Char}[]
+    C = Sequence{KneadingSymbol}[]
     for node in periodicnodes
         if ischaracteristic(H,node)
             push!(C,node)
@@ -106,7 +97,7 @@ end
 
 function OrientedHubbardTree(AIA::AngledInternalAddress)
     #Construct the unoriented Hubbard tree from the internal address ignoring the angles
-    H = HubbardTree(AIA.addr)
+    H = HubbardTree(InternalAddress(AIA.addr))
 
     #Find the boundary between the '0' region and the '1' region as the path between the beta fixed point and its preimage
     (H,boundary) = addboundary(H)
@@ -115,7 +106,7 @@ function OrientedHubbardTree(AIA::AngledInternalAddress)
     charangles = filter(x -> denominator(x) != 2, AIA.angles)
 
     #create empty oriented tree. 
-    orientedH = Dict{Sequence{Char}, Vector{Sequence{Char}}}()
+    orientedH = Dict{KneadingSequence, Vector{KneadingSequence}}()
 
     charorbits = characteristicorbits(H)
     for (node, ang) in zip(charorbits,charangles)
@@ -128,25 +119,25 @@ function OrientedHubbardTree(AIA::AngledInternalAddress)
         push!(orientedH,Pair(node,collect(H.adj[node])))
     end
     
-    mbeta = Sequence("AB",1)
+    mbeta = KneadingSequence(KneadingSymbol[A(),B()],1)
     #deal with beta orbit
     for node in orbit(mbeta).items
         push!(orientedH,Pair(node,collect(H.adj[node])))
     end
 
-    if orientedH[zero][1].items[1] == 'B'
+    if orientedH[zero][1].items[1] == B()
         circshift!(orientedH[zero],1)
     end
 
-    return OrientedHubbardTree(zero,orientedH,boundary)
+    return OrientedHubbardTree(orientedH)
 
 end
 
 function OrientedHubbardTree(angle::Rational)
     return OrientedHubbardTree(AngledInternalAddress(angle))
 end
-
-function orientnode(H,source::Sequence{Char},target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
+ 
+function orientnode(H,source::KneadingSequence,target::Pair{KneadingSequence, Vector{KneadingSequence}})
     
     sourcenode = source
     sourceneighbors = H[source]
@@ -177,10 +168,10 @@ function orientcharacteristic(H,node,ang)
     den = denominator(ang)
     glarms = globalarms(H.adj,node)
     zero = H.zero
-    per = period(zero)
+    per = zero.period
     c = shift(zero)
     q = length(glarms)
-    n = period(node)
+    n = node.period
 
     if den != q
         error("the denominator of the characteristic angle does not match the order of the branch point")
@@ -197,7 +188,7 @@ function orientcharacteristic(H,node,ang)
     return Pair(node,oriented)
 end
 
-function orientpreimages(H,P,target::Pair{Sequence{Char}, Vector{Sequence{Char}}})
+function orientpreimages(H,P,target::Pair{KneadingSequence, Vector{KneadingSequence}})
     keyvaluepairs = Dict(target)
     activetargets = [target[1]]
     while !isempty(activetargets)
@@ -217,8 +208,8 @@ function orientpreimages(H,P,target::Pair{Sequence{Char}, Vector{Sequence{Char}}
 end
 
 function addboundary(htree::HubbardTree)
-    beta = Sequence("B",0)
-    mbeta = Sequence("AB",1)
+    beta = KneadingSequence(KneadingSymbol[B()],0)
+    mbeta = KneadingSequence(KneadingSymbol[A(),B()],1)
     H = extend(htree,beta)
     H = extend(H,mbeta)
     

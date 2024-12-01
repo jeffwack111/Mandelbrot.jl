@@ -1,18 +1,6 @@
 using Primes
 using IterTools
 
-struct Digit{N} <: Integer
-    value::Int
-    function Digit{N}(value::Int) where N
-        m = N-1
-        0 <= value < N || error("Value must be in range [0, $m]")
-        new{N}(value)
-    end
-end
-
-Base.show(io::IO, d::Digit{N}) where {N} = print(io, d.value)
-Base.Int(d::Digit{N}) where {N} = d.value
-
 struct Sequence{T}
     items::Vector{T}
     preperiod::Int
@@ -48,79 +36,6 @@ struct Sequence{T}
     end
 end
 
-const BinaryExpansion = Sequence{Digit{2}}
-
-function BinaryExpansion(theta::Rational)    
-    orb = orbit(theta)
-    itinerary = Digit{2}[]
-    zero = Digit{2}(0)
-    one = Digit{2}(1)
-    for theta in orb.items
-        if theta < 1//2
-            push!(itinerary,zero)
-        else
-            push!(itinerary,one)
-        end
-    end
-    return Sequence{Digit{2}}(collect(itinerary),orb.preperiod)
-end
-
-function orbit(angle::Rational)
-    items = Rational[]
-
-    while isempty(findall(x->x==angle,items))
-        push!(items,angle)
-        angle = angle*2
-        angle = angle%1//1
-    end
-
-    preperiod = findall(x->x==angle,items)[1] - 1
-
-    return Sequence{Rational}(items,preperiod)
-    
-end
-
-abstract type KneadingSymbol end
-
-struct A <: KneadingSymbol end
-struct B <: KneadingSymbol end
-struct star <: KneadingSymbol end
-
-Base.show(io::IO, symb::KneadingSymbol) = print(io, repr(typeof(symb)))
-
-const KneadingSequence = Sequence{KneadingSymbol}
-
-function thetaitinerary(theta::Rational,orb::Sequence)
-    a = theta/2
-    b = (theta+1)/2
-    itinerary = KneadingSymbol[]
-
-    for angle in orb.items
-        if angle == a
-            push!(itinerary,star())
-        elseif angle == b
-            push!(itinerary,star())
-        elseif angle > a && angle < b
-            push!(itinerary,A())
-        else
-            push!(itinerary,B())
-        end
-    end
-    
-    return Sequence{KneadingSymbol}(itinerary,orb.preperiod)
-end
-
-function thetaitinerary(theta::Rational,angle::Rational)
-    return thetaitinerary(theta,orbit(angle))
-end
-
-function KneadingSequence(angle::Rational)
-    orb = orbit(angle)
-    return thetaitinerary(angle,orb)
-end
-
-
-
 function Sequence(str::String,preperiod::Int)
     return Sequence{Char}(Vector{Char}(str),preperiod)
 end
@@ -143,10 +58,6 @@ function Base.getindex(S::Sequence, I::UnitRange)
     return [S[ii] for ii in I]
 end
 
-function Base.length(S::Sequence)
-    return length(S.items)
-end
-
 function Base.hash(S::Sequence,h::UInt)
     k = hash(S.preperiod,foldr(hash,S.items; init = UInt(0)))
     return hash(h,hash(:Sequence,k))
@@ -162,8 +73,12 @@ function Base.show(io::IO, s::Sequence{Char})
     end
 end
 
-function period(S::Sequence)
-    return length(S.items) - S.preperiod
+function Base.getproperty(S::Sequence,sym::Symbol)
+    if sym === :period
+        return length(S.items) - S.preperiod
+    else
+        return getfield(S,sym)
+    end
 end
 
 function shift(seq::Sequence{T}) where T
@@ -188,7 +103,7 @@ function shiftby(seq::Sequence,n::Int)
     end
 end
 
-function prepend(K::Sequence,thing)
-    return Sequence{Char}(pushfirst!(copy(K.items),thing),K.preperiod+1)
+function prepend(K::Sequence{T},thing) where T
+    return Sequence{T}(pushfirst!(copy(K.items),thing),K.preperiod+1)
 end
 
