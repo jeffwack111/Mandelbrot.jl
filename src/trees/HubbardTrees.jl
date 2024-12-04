@@ -5,7 +5,16 @@
 include("../sequences/AngleDoubling.jl") 
 include("Graphs.jl")
 
-const HubbardTree = SetGraph{KneadingSequence}
+abstract type AbstractHubbardTree <: Graph end
+
+function criticalpoint(H::AbstractHubbardTree)
+    return first(filter(x->x[1]==star(),vertices(H)))
+end
+
+struct HubbardTree <: AbstractHubbardTree
+    adj::Dict{KneadingSequence,Set{KneadingSequence}}
+    criticalpoint::KneadingSequence
+end
 
 function HubbardTree(K::KneadingSequence)
     starK = prepend(K,star())
@@ -21,7 +30,7 @@ function HubbardTree(K::KneadingSequence)
             #println("result is $H")
         end
     end
-    return SetGraph{KneadingSequence}(H)
+    return HubbardTree(H,starK)
 end
 
 function HubbardTree(intadd::InternalAddress)
@@ -29,16 +38,6 @@ function HubbardTree(intadd::InternalAddress)
     seq = copy(K.items)
     seq[end] = star()
     return HubbardTree(Sequence{KneadingSymbol}(seq,0))
-end
-
-function Base.getproperty(H::HubbardTree,sym::Symbol)
-    if sym === :zero
-        return first(filter(x->x[1]==star(),H.vertices))
-    elseif sym === :vertices
-        return Set(keys(H.adj))
-    else
-        return getfield(H,sym)
-    end
 end
 
 function addsequence(Htree,Kseq,(A,Bset),newpoint)
@@ -74,9 +73,9 @@ function addsequence(Htree,Kseq,(A,Bset),newpoint)
 end
 
 function extend(H::HubbardTree,new::Sequence)
-    Z = H.zero
+    Z = criticalpoint(H)
     K = shift(Z)
-    return HubbardTree(addsequence(H.adj,K,(Z,deepcopy(H.adj[Z])),new))
+    return HubbardTree(addsequence(H.adj,K,(Z,deepcopy(H.adj[Z])),new),Z)
 end
 
 function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
@@ -159,8 +158,8 @@ function findone(f,A)
     end
 end
 
-function isbetween(htree::Dict,a,b,c)
-    zero = first(filter(x->x.items[1]==star(),keys(htree)))
+function isbetween(htree::AbstractHubbardTree,a,b,c)
+    zero = htree.criticalpoint
     K = shift(zero)
     (type,vertex) = iteratetriod(K,(a,b,c))
     if type == "flat" && vertex == a

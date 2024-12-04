@@ -2,8 +2,8 @@ include("../sequences/AngleDoubling.jl")
 include("../spidermap/SpiderFuncs.jl")
 
 struct ExternalRays
-    orb::Sequence{Rational}
-    rays::Dict{Rational,Vector{ComplexF64}}
+    orb::Sequence{BinaryExpansion}
+    rays::Dict{BinaryExpansion,Vector{ComplexF64}}
     parameter::Complex
 end
 
@@ -11,7 +11,7 @@ end
 ## Question: Is it possible to update the rays in a mutating and not problematic way?
 function goesto(seq::Sequence)
     l = seq.preperiod
-    k = period(seq)
+    k = seq.period
     idx = append!(collect(1:l).+1,circshift(l+1:l+k,-1))
     return [(seq.items[x],seq.items[y]) for (x,y) in enumerate(idx)]
 end 
@@ -44,12 +44,12 @@ function extend!(Ext::ExternalRays)
 end
 
 
-function dynamicrays(c::Complex,angle::Rational,R::Real,res::Int,depth::Int)
+function dynamicrays(c::Complex,angle::BinaryExpansion,R::Real,res::Int,depth::Int)
     orb = orbit(angle)
     radii = collect(LinRange(R,sqrt(R),res))
 
     #similar to standard spider but is outer
-    rays = Sequence{Vector{ComplexF64}}([exp(2im*pi*theta).*radii for theta in orb.items],orb.preperiod)
+    rays = Sequence{Vector{ComplexF64}}([exp(2im*pi*Rational(theta)).*radii for theta in orb.items],orb.preperiod)
 
     for jj in 1:depth
         for (target,source) in goesto(rays)

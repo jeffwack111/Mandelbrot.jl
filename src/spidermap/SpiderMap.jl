@@ -5,7 +5,7 @@ include("../sequences/AngleDoubling.jl")
 struct Spider
     angle::Rational
     orbit::Sequence{Rational}
-    kneading_sequence::Sequence{Char}
+    kneading_sequence::KneadingSequence
     legs::Vector{Vector{ComplexF64}}
 end
 
@@ -65,7 +65,7 @@ function mapspider!(S::Spider)
     λ = S.legs[2][end] #the parameter of our polynomial map z -> λ(1+z/2)^2
     a = (angle(S.legs[1][1]/λ)/(2*pi)+1)%1 #the angle whose halves will define the boundary between regions A and B at infinity. in full turns
 
-    n = length(S.orbit)
+    n = length(S.orbit.items)
 
     newLegs = Vector{Vector{ComplexF64}}(undef,n)
 
@@ -76,11 +76,11 @@ function mapspider!(S::Spider)
     #this angle lays in region A by definition. 
 
     if a/2 < theta1 && theta1 < (a+1)/2
-        cregion = 'A'
-        dregion = 'B'
+        cregion = A()
+        dregion = B()
     else
-        cregion = 'B'
-        dregion = 'A'
+        cregion = B()
+        dregion = A()
     end
     
     for ii in 2:n-1
@@ -103,13 +103,14 @@ function mapspider!(S::Spider)
         end
     end
 
+    #TODO what is going on with the periodic case? kneading sequences never have 1s and 2s now
     #we will break into periodic and preperiodic cases for the last leg
     if S.orbit.preperiod == 0 #periodic
         u = sqrt(S.legs[1][1]./λ)
         thetau = (angle(u)/(2*pi)+1)%1
         
         if abs2(thetau - a/2) < abs2(thetau - (a+1)/2)
-            if cregion == 'A'
+            if cregion == A()
                 if S.kneading_sequence.items[end] == '2'
                     newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
@@ -123,7 +124,7 @@ function mapspider!(S::Spider)
                 end
             end
         else
-            if cregion == 'A'
+            if cregion == A()
                 if S.kneading_sequence.items[end] == '1'
                     newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else

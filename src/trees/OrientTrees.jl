@@ -1,6 +1,10 @@
 include("HubbardTrees.jl") 
 
-const OrientedHubbardTree = OrientedGraph{KneadingSequence}
+struct OrientedHubbardTree <: AbstractHubbardTree
+    adj::Dict{Sequence,Vector{Sequence}}
+    criticalpoint::KneadingSequence
+    boundary::Vector{KneadingSequence}
+end
 
 function forwardimages(htree)
     return Dict([Pair(key,[shift(key)]) for key in keys(htree)])
@@ -41,7 +45,7 @@ function ischaracteristic(htree,periodicpoint)
 
     forbit = forwardorbit(htree.adj,periodicpoint)[2]
 
-    zero = htree.zero
+    zero = htree.criticalpoint
 
     won = shift(zero)
 
@@ -77,9 +81,9 @@ function characteristicset(H)
     #before returning this vector we must put it in order from 0 to the critical point.
     #This will result later in the correct numerators being matched up with the correct characteristic points
     #There should be a single element of C which is between 0 and all the other elements
-    zero = H.zero
+    zero = H.criticalpoint
     crit_value = shift(zero)
-    path = nodepath(H.adj,zero,crit_value)
+    path = nodepath(H,zero,crit_value)
     D = []
     for node in path
         if node in C
@@ -114,7 +118,7 @@ function OrientedHubbardTree(AIA::AngledInternalAddress)
     end
 
     #Deal with the critical orbit
-    zero = H.zero
+    zero = H.criticalpoint
     for node in orbit(zero).items
         push!(orientedH,Pair(node,collect(H.adj[node])))
     end
@@ -129,7 +133,7 @@ function OrientedHubbardTree(AIA::AngledInternalAddress)
         circshift!(orientedH[zero],1)
     end
 
-    return OrientedHubbardTree(orientedH)
+    return OrientedHubbardTree(orientedH,zero,boundary)
 
 end
 
@@ -167,7 +171,7 @@ function orientcharacteristic(H,node,ang)
     num = numerator(ang)
     den = denominator(ang)
     glarms = globalarms(H.adj,node)
-    zero = H.zero
+    zero = H.criticalpoint
     per = zero.period
     c = shift(zero)
     q = length(glarms)
@@ -213,14 +217,14 @@ function addboundary(htree::HubbardTree)
     H = extend(htree,beta)
     H = extend(H,mbeta)
     
-    boundary = nodepath(H.adj,beta,mbeta)
+    boundary = nodepath(H,beta,mbeta)
 
     return (H,boundary)
 end
 
 function labelonezero(OH::OrientedHubbardTree)
     htree = OH.adj
-    zero = OH.zero
+    zero = OH.criticalpoint
     K = shift(zero)
     
     #We now want to traverse the boundary, assigning 1s and 0s to the entire tree as we go.
@@ -229,7 +233,8 @@ function labelonezero(OH::OrientedHubbardTree)
     #As we head along, we have a boundary point behind us and a boundary point ahead of us. 
     #The neighbors which are counterclockwise of the point behind and clockwise of the point ahead are in region 0
     boundary = OH.boundary
-    OZ = Dict([Pair(node,'*') for node in boundary])
+    OZ = Dict{KneadingSequence, Union{Nothing,Digit{2}}}([Pair(node,nothing) for node in boundary])
+
     lastnode = nothing
 
     for (ii,activenode) in enumerate(boundary[1:end-1])
@@ -244,10 +249,10 @@ function labelonezero(OH::OrientedHubbardTree)
         num_neighbors = length(htree[activenode])
 
         idx = mod1(idx+1,num_neighbors)
-        sym = '1'
+        sym = Digit{2}(1)
         while htree[activenode][idx] != nextnode
             if htree[activenode][idx] == lastnode
-                sym = '0'
+                sym = Digit{2}(0)
             else
                 push!(OZ, Pair(htree[activenode][idx],sym))
                 #go down the rabbit hole
@@ -274,20 +279,20 @@ function anglesofbranch(OZ,OH,node)
         error("$node is not a branch point")
     end
     neighbors = copy(initialneighbors)
-    angles = [Char[] for x in neighbors]
+    angles = [Digit{2}[] for x in neighbors]
     visited = []
     while !((node,neighbors) in visited) || isempty(visited)
         push!(visited,(node,copy(neighbors)))
-        if OZ[node] == '*' #We are on the boundary and need to use neighbor info
+        if OZ[node] === nothing #We are on the boundary and need to use neighbor info
             for (ii, neighb) in enumerate(neighbors)
-                if OZ[neighb] == '*'
+                if OZ[neighb] === nothing
                     #Are we before or after the node on the boundary?
                     nodeidx = findone(x->x==node,boundary)
                     neighbidx = findone(x->x==neighb,boundary)
                     if nodeidx > neighbidx
-                        push!(angles[ii],'0')
+                        push!(angles[ii],Digit{2}(0))
                     else
-                        push!(angles[ii],'1')
+                        push!(angles[ii],Digit{2}(1))
                     end
                 else
                     push!(angles[ii],OZ[neighb])
@@ -304,39 +309,39 @@ function anglesofbranch(OZ,OH,node)
             neighbors[ii] = neighbortowards(htree,node,shift(neighb))
         end
     end
-    thetas = [Sequence{Char}(digits,l) for digits in angles]
+    thetas = [BinaryExpansion(digits,l) for digits in angles]
     return thetas
 end
 
 function criticalanglesof(OZ,OH)
     H = OH.adj
-    zero = OH.zero
+    zero = OH.criticalpoint
     node = shift(zero)
     boundary = OH.boundary
 
     initialneighb = first(collect(H[node]))
     neighb = initialneighb
-    angles = [Char[] for x in 1:2]
+    angles = [Digit{2}[] for x in 1:2]
     visited = []
     while !(node in visited)
         push!(visited,node)
-        if OZ[node] == '*' #We are on the boundary and need to use neighbor info
+        if OZ[node] === nothing #We are on the boundary and need to use neighbor info
             for ii in 1:2
-                if OZ[neighb] == '*'
+                if OZ[neighb] === nothing
                     #Are we before or after the node on the boundary?
                     nodeidx = findone(x->x==node,boundary)
                     neighbidx = findone(x->x==neighb,boundary)
                     if nodeidx > neighbidx 
                         if ii == 1
-                            push!(angles[ii],'0')
+                            push!(angles[ii],Digit{2}(0))
                         else
-                            push!(angles[ii],'1')
+                            push!(angles[ii],Digit{2}(1))
                         end
                     else
                         if ii == 1
-                            push!(angles[ii],'1')
+                            push!(angles[ii],Digit{2}(1))
                         else
-                            push!(angles[ii],'0')
+                            push!(angles[ii],Digit{2}(0))
                         end
                     end
                 else
@@ -351,7 +356,7 @@ function criticalanglesof(OZ,OH)
         node = shift(node)
         neighb = neighbortowards(H,node,shift(neighb))
     end
-    thetadigits = [Sequence{Char}(digits,node.preperiod) for digits in angles]
+    thetadigits = [BinaryExpansion(digits,node.preperiod) for digits in angles]
     return thetadigits
 end
 
@@ -367,7 +372,7 @@ function allanglesof(OZ,OH)
 
     H = OH.adj
     boundary = OH.boundary
-    zero = OH.zero
+    zero = OH.criticalpoint
     seq = shift(zero)
 
     angles = criticalanglesof(OZ,OH)
@@ -388,8 +393,8 @@ function allanglesof(OZ,OH)
         end
     end
 
-    push!(pairs,Pair(Sequence("B",0),[Sequence("0",0)]))
-    push!(pairs,Pair(Sequence("AB",1),[Sequence("10",1)]))
+    push!(pairs,Pair(KneadingSequence(KneadingSymbol[B()],0),[BinaryExpansion([Digit{2}(0)],0)]))
+    push!(pairs,Pair(KneadingSequence(KneadingSymbol[A(),B()],1),[BinaryExpansion([Digit{2}(1),Digit{2}(0)],1)]))
 
     #last we do the preperiodic branch points. This is slow!
     for node in keys(H)

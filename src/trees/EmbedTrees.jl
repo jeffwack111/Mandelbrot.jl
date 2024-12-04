@@ -2,49 +2,47 @@ include("OrientTrees.jl")
 include("../spidermap/SpiderMap.jl")
 include("../parameters/DynamicRays.jl")
 
-struct EmbeddedHubbardTree
-    zero::Sequence
-    adj::Dict{Sequence,Vector{Sequence}}
-    boundary::Vector{Sequence}
-    onezero::Dict{Sequence{Char}, Char}
+struct HyperbolicComponent
+    criticalpoint::Sequence
+    adj::Dict{KneadingSequence,Vector{KneadingSequence}}
+    boundary::Vector{KneadingSequence}
+    onezero::Dict{KneadingSequence, Union{Nothing,Digit{2}}}
     angle::Rational
-    rays::Dict{Rational,Vector{ComplexF64}}
+    rays::Dict{BinaryExpansion,Vector{ComplexF64}}
     parameter::ComplexF64
-    vertices::Dict{Sequence, ComplexF64} #maps each vertex in the tree to a point in the plane
-    edges::Dict{Set{Sequence{Char}}, Tuple{Sequence{Char}, Vector{ComplexF64}}} #maps each edge to an oriented polyline
+    vertices::Dict{KneadingSequence, ComplexF64} #maps each vertex in the tree to a point in the plane
+    edges::Dict{Set{KneadingSequence}, Tuple{KneadingSequence, Vector{ComplexF64}}} #maps each edge to an oriented polyline
 end
 
-function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
+function HyperbolicComponent(OHT::OrientedHubbardTree)
 
     OZ = labelonezero(OHT)
     anglelist = allanglesof(OZ,OHT)
 
-    criticalorbit = orbit(OHT.zero) #This is a sequence orbit
+    criticalorbit = orbit(OHT.criticalpoint) #This is a sequence orbit
 
-    theta = angleof(first(criticalanglesof(OZ,OHT)))
+    theta = Rational(first(criticalanglesof(OZ,OHT)))
     c = parameter(standardspider(theta),250)
-    println(c)
 
     #critical orbit
     rays = Dict()
     #periodic branch points
     characteristicpoints = characteristicset(OHT)
     for point in characteristicpoints
-        merge!(rays,dynamicrays(c,angleof(first(anglelist[point])),100,10,20))
+        merge!(rays,dynamicrays(c,first(anglelist[point]),100,10,20))
     end
-
+    
     #preperiod branch points. This is slow!
     for node in keys(OHT.adj)
         for angle in anglelist[node]
             if !(angle in keys(rays))
-                phi = angleof(angle)
-                push!(rays,Pair(phi,dynamicrays(c,phi,100,10,20)[phi]))
+                push!(rays,Pair(angle,dynamicrays(c,angle,100,10,20)[angle]))
             end
         end
     end
     
-    merge!(rays,dynamicrays(c,1//2,100,10,40))
-    merge!(rays,dynamicrays(c,0//1,100,10,40))
+    merge!(rays,dynamicrays(c,BinaryExpansion(1//2),100,10,40))
+    merge!(rays,dynamicrays(c,BinaryExpansion(0//1),100,10,40))
 
     paramorbit = [0.0+0.0im]
     n = period(theta)
@@ -56,19 +54,19 @@ function EmbeddedHubbardTree(OHT::OrientedHubbardTree)
 
     zvalues = Dict{Sequence,ComplexF64}()
     for node in keys(OHT.adj)
-        if '*' in node.items #then it is in the critical orbit
-            idx = findone(x->x=='*',node.items)
+        if star() in node.items #then it is in the critical orbit
+            idx = findone(x->x==star(),node.items)
             push!(zvalues,Pair(node,paramorbit[mod1(n-idx+2,n)]))
         else
-            list = [rays[angleof(angle)][end] for angle in anglelist[node]]
+            list = [rays[angle][end] for angle in anglelist[node]]
             push!(zvalues,Pair(node,sum(list)/length(list)))
         end
     end
-    E = standardedges(OHT.adj,OHT.zero,zvalues)
-    return EmbeddedHubbardTree(OHT.zero,OHT.adj,OHT.boundary,OZ,theta,rays,c,zvalues,E)
+    E = standardedges(OHT.adj,OHT.criticalpoint,zvalues)
+    return HyperbolicComponent(OHT.criticalpoint,OHT.adj,OHT.boundary,OZ,theta,rays,c,zvalues,E)
 end
 
-function Base.show(io::IO,H::EmbeddedHubbardTree)
+function Base.show(io::IO,H::HyperbolicComponent)
     return println(io,"Embedded Hubbard tree of "*repr(H.angle)*" with "*repr(length(keys(H.adj)))*" vertices")
 end
 
@@ -120,7 +118,7 @@ function edgepath(graph,start, finish)
 end
 
 function refinedtree(OHT,zvalues,steps)
-    c = zvalues[shift(OHT.zero)]
+    c = zvalues[shift(OHT.criticalpoint)]
     E = standardedges(OHT,zvalues)
     for ii in 1:steps
         E = refinetree(OHT,c,E)
@@ -128,7 +126,7 @@ function refinedtree(OHT,zvalues,steps)
     return E
 end
 
-function refinetree!(EHT::EmbeddedHubbardTree)
+function refinetree!(EHT)
 
     newedges = []
     for edge in keys(EHT.edges)

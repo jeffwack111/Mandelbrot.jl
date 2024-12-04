@@ -12,28 +12,28 @@ end
 function Makie.plot!(myplot::TreePlot)
     EHT = myplot.EHT[]
     (EdgeList,Nodes) = adjlist(EHT.adj)
-    criticalorbit = orbit(EHT.zero)
+    criticalorbit = orbit(EHT.criticalpoint)
 
     labels = []
     nodecolors = []
     for node in Nodes
         firstchar = node.items[1]
-        if firstchar == '*'
+        if firstchar == star()
             push!(nodecolors,"black")
-        elseif firstchar == 'A' #we are fully in one of the 4 regions
-            if EHT.onezero[node] == '0'
+        elseif firstchar == A() #we are fully in one of the 4 regions
+            if EHT.onezero[node] == Digit{2}(0)
                 push!(nodecolors,"blue")
-            elseif EHT.onezero[node] == '*'
+            elseif EHT.onezero[node] === nothing
                 push!(nodecolors,"turquoise")
-            elseif EHT.onezero[node] == '1'
+            elseif EHT.onezero[node] == Digit{2}(1)
                 push!(nodecolors,"green")
             end
-        elseif firstchar == 'B'
-            if EHT.onezero[node] == '0'
+        elseif firstchar == B()
+            if EHT.onezero[node] == Digit{2}(0)
                 push!(nodecolors,"red")
-            elseif EHT.onezero[node] == '*'
+            elseif EHT.onezero[node] === nothing
                 push!(nodecolors,"orangered2")
-            elseif EHT.onezero[node] == '1'
+            elseif EHT.onezero[node] == Digit{2}(1)
                 push!(nodecolors,"orange")
             end
         end

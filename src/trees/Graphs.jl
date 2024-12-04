@@ -1,22 +1,19 @@
+#implement adj and you should be able to use all these functions?
 abstract type Graph end
-
-struct SetGraph{T} <: Graph
-    adj::Dict{T,Set{T}}
-end
-
-struct OrientedGraph{T} <: Graph
-    adj::Dict{T,Vector{T}}
-end
 
 function Base.getindex(G::Graph,idx)
     return G.adj[idx]
 end
 
+function vertices(G::Graph)
+    return Set(keys(G.adj))
+end
+
 Base.show(io::IO,G::Graph) = display(G.adj)
 
-function adjlist(graph::Graph)
+function adjlist(graph)
     #first, assign an index to each point
-    nodes = collect(graph.vertices)
+    nodes = collect(keys(graph))
     E = Vector{Int}[]
     for node in nodes
         g = []

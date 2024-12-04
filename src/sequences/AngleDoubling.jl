@@ -316,8 +316,10 @@ struct Digit{N} <: Integer
     end
 end
 
+Base.hash(d::Digit,h::UInt64) = hash(d.value,h)
+
 Base.show(io::IO, d::Digit{N}) where {N} = print(io, d.value)
-Base.Int(d::Digit{N}) where {N} = d.value
+Base.Int(d::Digit) = d.value
 
 const BinaryExpansion = Sequence{Digit{2}}
 

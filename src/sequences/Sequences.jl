@@ -36,6 +36,14 @@ struct Sequence{T}
     end
 end
 
+function Base.getproperty(S::Sequence,sym::Symbol)
+    if sym === :period
+        return length(S.items) - S.preperiod
+    else
+        return getfield(S,sym)
+    end
+end
+
 function Sequence(str::String,preperiod::Int)
     return Sequence{Char}(Vector{Char}(str),preperiod)
 end
@@ -70,14 +78,6 @@ function Base.show(io::IO, s::Sequence{Char})
         return print(io,"|"*str*"|")
     else
         return print(io,str[1:L]*"|"*str[L+1:end]*"|")
-    end
-end
-
-function Base.getproperty(S::Sequence,sym::Symbol)
-    if sym === :period
-        return length(S.items) - S.preperiod
-    else
-        return getfield(S,sym)
     end
 end
 
