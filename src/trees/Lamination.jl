@@ -149,7 +149,7 @@ end
 
 function conjugate(angle::Rational)
     orb = orbit(angle)
-    n = period(orb)
+    n = orb.period
 
     halfa = angle/2
     halfb = angle/2 + 1//2

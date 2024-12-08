@@ -1,4 +1,4 @@
-name = "Spiders"
+name = "Mandelbrot"
 uuid = "52854307-bbd1-4ac7-933f-adc0936abe8a"
 authors = ["Jeffrey Wack"]
 version = "0.1.0"

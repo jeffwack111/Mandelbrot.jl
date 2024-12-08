@@ -9,8 +9,10 @@ export HubbardTree
 export AngledInternalAddress
 export OrientedHubbardTree
 
-export HyperbolicComponent
+export parameter
 
-export treeplot
+#export HyperbolicComponent
+
+#export treeplot
 
 end

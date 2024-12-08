@@ -1,5 +1,8 @@
 include("HubbardTrees.jl") 
 
+"A combinatorial Hubbard tree with cyclic order at each vertex. 
+It can be constructed from an AngledInternalAddress
+or a rational angle, and it can be used to construct a HyperbolicComponent"
 struct OrientedHubbardTree <: AbstractHubbardTree
     adj::Dict{Sequence,Vector{Sequence}}
     criticalpoint::KneadingSequence
