@@ -1,4 +1,4 @@
-module Spiders
+module Mandelbrot
 include("trees/ShowTree.jl")
 
 export KneadingSequence
