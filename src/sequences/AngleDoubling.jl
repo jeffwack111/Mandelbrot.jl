@@ -1,55 +1,89 @@
 include("Sequences.jl")
 
-function orbit(angle::Rational)
-    items = Rational[]
+alphabet = ['*','A','B']
+
+struct RationalAngle <: Number
+    value::Rational
+    function RationalAngle(theta::Rational)
+        if theta > 1
+            @warn "Creating angle from number larger than 1, only the fractional part will be kept."
+            new(mod(theta,1))
+        else
+            new(theta)
+        end
+    end
+end
+
+import Base: +, *, /, <, >, numerator, denominator
+
+phi::RationalAngle + theta::RationalAngle = RationalAngle(mod(phi.value+theta.value,1))
+theta::RationalAngle * s::Number = RationalAngle(mod(theta.value*s,1))
+s::Number * theta::RationalAngle = theta * s
+theta::RationalAngle / s::Number = RationalAngle(theta.value/s)
+phi::RationalAngle > theta::RationalAngle = phi.value > theta.value
+phi::RationalAngle < theta::RationalAngle = phi.value < theta.value
+
+denominator(theta::RationalAngle) = denominator(theta.value)
+numerator(theta::RationalAngle) = numerator(theta.value)
+
+function orbit(angle::RationalAngle)
+    items = RationalAngle[]
 
     while isempty(findall(x->x==angle,items))
         push!(items,angle)
         angle = angle*2
-        angle = angle%1//1
     end
 
     preperiod = findall(x->x==angle,items)[1] - 1
 
-    return Sequence{Rational}(items,preperiod)
+    return Sequence{RationalAngle}(items,preperiod)
     
 end
 
-abstract type KneadingSymbol end
+struct KneadingSymbol <: Integer
+    value::Int
+    function KneadingSymbol(value::Int)
+        0 <= value <=2  || error("Value must be in range [0, 2]")
+        new(value)
+    end
+end
 
-struct A <: KneadingSymbol end
-struct B <: KneadingSymbol end
-struct star <: KneadingSymbol end
+#necessary for using kneading sequences as dictionary keys
+Base.hash(d::KneadingSymbol,h::UInt64) = hash(d.value,h)
 
-Base.show(io::IO, symb::A) = print(io,'A')
-Base.show(io::IO, symb::B) = print(io,'B')
-Base.show(io::IO, symb::star) = print(io,'*')
+function KneadingSymbol(c::Char)
+    return KneadingSymbol(first(findall(x->x==c,alphabet))-1)
+end
+
+function Base.show(io::IO, symb::KneadingSymbol) 
+    print(io,alphabet[symb.value+1])
+end
 
 const KneadingSequence = Sequence{KneadingSymbol}
 
-function KneadingSequence(angle::Rational)
+function KneadingSequence(angle::RationalAngle)
     orb = orbit(angle)
     return thetaitinerary(angle,orb)
 end
 
-function thetaitinerary(theta::Rational,angle::Rational)
+function thetaitinerary(theta::RationalAngle,angle::RationalAngle)
     return thetaitinerary(theta,orbit(angle))
 end
 
-function thetaitinerary(theta::Rational,orb::Sequence)
+function thetaitinerary(theta::RationalAngle,orb::Sequence)
     a = theta/2
-    b = (theta+1)/2
+    b = theta/2+RationalAngle(1//2)
     itinerary = KneadingSymbol[]
 
     for angle in orb.items
         if angle == a
-            push!(itinerary,star())
+            push!(itinerary,KneadingSymbol('*'))
         elseif angle == b
-            push!(itinerary,star())
+            push!(itinerary,KneadingSymbol('*'))
         elseif angle > a && angle < b
-            push!(itinerary,A())
+            push!(itinerary,KneadingSymbol('A'))
         else
-            push!(itinerary,B())
+            push!(itinerary,KneadingSymbol('B'))
         end
     end
     
@@ -115,15 +149,15 @@ end
 function KneadingSequence(intadd::InternalAddress)
     address = copy(intadd.addr)
     if address == [1]
-        return Sequence{KneadingSymbol}(KneadingSymbol[A()],0)
+        return Sequence{KneadingSymbol}(KneadingSymbol[KneadingSymbol('A')],0)
     else
         s = pop!(address)
         K = KneadingSequence(InternalAddress(address))
         R = K.items[mod1.(1:s-1,end)]
-        if K.items[mod1(s,end)] == A()
-            push!(R,B())
+        if K.items[mod1(s,end)] == KneadingSymbol('A')
+            push!(R,KneadingSymbol('B'))
         else
-            push!(R,A())
+            push!(R,KneadingSymbol('A'))
         end
         return Sequence{KneadingSymbol}(R,0)
     end
@@ -166,11 +200,11 @@ end
 
 struct AngledInternalAddress
     addr::Vector{Int}
-    angles::Vector{Rational}
+    angles::Vector{RationalAngle}
 end
 
 #Lemma 11.14 TreesBook page 146
-function AngledInternalAddress(theta::Rational)
+function AngledInternalAddress(theta::RationalAngle)
     intadd = InternalAddress(KneadingSequence(theta))
     denoms = denominators(intadd)
     angles = Rational[]
@@ -178,7 +212,7 @@ function AngledInternalAddress(theta::Rational)
     for ii in 1:length(intadd)-1
         n = 0
         for jj in 1:(denoms[ii] - 1)
-            if ((2//1)^((jj-1)*intadd[ii])*theta)%1 <= theta
+            if ((2//1)^((jj-1)*intadd[ii])*theta) <= theta
                 n += 1
             end
         end
@@ -323,7 +357,7 @@ Base.Int(d::Digit) = d.value
 
 const BinaryExpansion = Sequence{Digit{2}}
 
-function BinaryExpansion(theta::Rational)    
+function BinaryExpansion(theta::RationalAngle)    
     orb = orbit(theta)
     itinerary = Digit{2}[]
     zero = Digit{2}(0)
@@ -338,7 +372,7 @@ function BinaryExpansion(theta::Rational)
     return Sequence{Digit{2}}(collect(itinerary),orb.preperiod)
 end
 
-function Rational(bits::BinaryExpansion)
+function RationalAngle(bits::BinaryExpansion)
     theta = 0//1
     k = bits.period
     r = 1//(1//1-(2//1)^-k)
@@ -351,5 +385,5 @@ function Rational(bits::BinaryExpansion)
             end
         end
     end
-    return theta
+    return RationalAngle(theta)
 end

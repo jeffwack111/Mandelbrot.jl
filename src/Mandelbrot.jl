@@ -9,6 +9,8 @@ export HubbardTree
 export AngledInternalAddress
 export OrientedHubbardTree
 
+export RationalAngle
+
 export parameter
 
 #export HyperbolicComponent

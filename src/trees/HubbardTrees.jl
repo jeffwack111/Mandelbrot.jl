@@ -8,7 +8,7 @@ include("Graphs.jl")
 abstract type AbstractHubbardTree <: Graph end
 
 function criticalpoint(H::AbstractHubbardTree)
-    return first(filter(x->x[1]==star(),vertices(H)))
+    return first(filter(x->x[1]==KneadingSymbol('*'),vertices(H)))
 end
 
 struct HubbardTree <: AbstractHubbardTree
@@ -17,7 +17,7 @@ struct HubbardTree <: AbstractHubbardTree
 end
 
 function HubbardTree(K::KneadingSequence)
-    starK = prepend(K,star())
+    starK = prepend(K,KneadingSymbol('*'))
     #We begin with the critical orbit
     markedpoints = copy(orbit(starK).items)
 
@@ -36,7 +36,7 @@ end
 function HubbardTree(intadd::InternalAddress)
     K = KneadingSequence(intadd)
     seq = copy(K.items)
-    seq[end] = star()
+    seq[end] = KneadingSymbol('*')
     return HubbardTree(Sequence{KneadingSymbol}(seq,0))
 end
 
@@ -88,12 +88,12 @@ function iteratetriod(K::Sequence,triod::Tuple{Sequence,Sequence,Sequence})
         if triod[1].items[1] == triod[2].items[1] && triod[1].items[1] == triod[3].items[1]
             triod = (shift(triod[1]),shift(triod[2]),shift(triod[3]))
 
-        elseif Set([triod[1].items[1],triod[2].items[1],triod[3].items[1]]) == Set([A(),B(),star()]) 
-            if triod[1].items[1] == star()
+        elseif Set([triod[1].items[1],triod[2].items[1],triod[3].items[1]]) == Set([KneadingSymbol('A'),KneadingSymbol('B'),KneadingSymbol('*')]) 
+            if triod[1].items[1] == KneadingSymbol('*')
                 middle = triodList[1][1]
-            elseif triod[2].items[1] == star()
+            elseif triod[2].items[1] == KneadingSymbol('*')
                 middle = triodList[1][2]
-            elseif triod[3].items[1] == star()
+            elseif triod[3].items[1] == KneadingSymbol('*')
                 middle = triodList[1][3]
             end
             

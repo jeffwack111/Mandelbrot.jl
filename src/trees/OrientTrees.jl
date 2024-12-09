@@ -2,7 +2,7 @@ include("HubbardTrees.jl")
 
 "A combinatorial Hubbard tree with cyclic order at each vertex. 
 It can be constructed from an AngledInternalAddress
-or a rational angle, and it can be used to construct a HyperbolicComponent"
+or a RationalAngle, and it can be used to construct a HyperbolicComponent"
 struct OrientedHubbardTree <: AbstractHubbardTree
     adj::Dict{Sequence,Vector{Sequence}}
     criticalpoint::KneadingSequence
@@ -22,16 +22,13 @@ function forwardorbit(htree,start)
     return component(forwardimages(htree), start)
 end
 
-function backwardsorbit(htree, start)
-    return component(preimages(htree), start)
-end
-
 function grandorbit(htree, start)
     dynamicadjacency = mergewith(append!,forwardimages(htree),preimages(htree))
     p = component(dynamicadjacency, start)
     return Set(push!(p.second,p.first))
 end
 
+#Should be used to plot tree dynamics?
 function dynamiccomponents(htree)
     return Set([grandorbit(htree,x) for x in keys(htree)])
 end
@@ -126,13 +123,13 @@ function OrientedHubbardTree(AIA::AngledInternalAddress)
         push!(orientedH,Pair(node,collect(H.adj[node])))
     end
     
-    mbeta = KneadingSequence(KneadingSymbol[A(),B()],1)
+    mbeta = KneadingSequence(KneadingSymbol[KneadingSymbol('A'),KneadingSymbol('B')],1)
     #deal with beta orbit
     for node in orbit(mbeta).items
         push!(orientedH,Pair(node,collect(H.adj[node])))
     end
 
-    if orientedH[zero][1].items[1] == B()
+    if orientedH[zero][1].items[1] == KneadingSymbol('B')
         circshift!(orientedH[zero],1)
     end
 
@@ -141,7 +138,7 @@ function OrientedHubbardTree(AIA::AngledInternalAddress)
 end
 
 function OrientedHubbardTree(angle::Rational)
-    return OrientedHubbardTree(AngledInternalAddress(angle))
+    return OrientedHubbardTree(AngledInternalAddress(RationalAngle(angle)))
 end
  
 function orientnode(H,source::KneadingSequence,target::Pair{KneadingSequence, Vector{KneadingSequence}})
@@ -215,8 +212,8 @@ function orientpreimages(H,P,target::Pair{KneadingSequence, Vector{KneadingSeque
 end
 
 function addboundary(htree::HubbardTree)
-    beta = KneadingSequence(KneadingSymbol[B()],0)
-    mbeta = KneadingSequence(KneadingSymbol[A(),B()],1)
+    beta = KneadingSequence(KneadingSymbol[KneadingSymbol('B')],0)
+    mbeta = KneadingSequence(KneadingSymbol[KneadingSymbol('A'),KneadingSymbol('B')],1)
     H = extend(htree,beta)
     H = extend(H,mbeta)
     
@@ -224,216 +221,3 @@ function addboundary(htree::HubbardTree)
 
     return (H,boundary)
 end
-
-function labelonezero(OH::OrientedHubbardTree)
-    htree = OH.adj
-    zero = OH.criticalpoint
-    K = shift(zero)
-    
-    #We now want to traverse the boundary, assigning 1s and 0s to the entire tree as we go.
-    #We will give the symbols to the neighbors at each vertex, so that in place of the Vector{Sequence{Char}}, we have a Vector{Tuple{Sequence{Char},{Char}}}.
-    #Heading to minus beta from beta, 0 is on the left and 1 is on the right.
-    #As we head along, we have a boundary point behind us and a boundary point ahead of us. 
-    #The neighbors which are counterclockwise of the point behind and clockwise of the point ahead are in region 0
-    boundary = OH.boundary
-    OZ = Dict{KneadingSequence, Union{Nothing,Digit{2}}}([Pair(node,nothing) for node in boundary])
-
-    lastnode = nothing
-
-    for (ii,activenode) in enumerate(boundary[1:end-1])
-        #first we label all of the activenode's neighbors.
-        #If any of them are not boundary points, we label that entire branch.
-        #what is the next node? 
-        #It is the unique boundary point which is a neighbor of the current node and is not the last node.
-
-        nextnode = boundary[ii+1]
-        idx = findone(x-> x==nextnode,htree[activenode])
-
-        num_neighbors = length(htree[activenode])
-
-        idx = mod1(idx+1,num_neighbors)
-        sym = Digit{2}(1)
-        while htree[activenode][idx] != nextnode
-            if htree[activenode][idx] == lastnode
-                sym = Digit{2}(0)
-            else
-                push!(OZ, Pair(htree[activenode][idx],sym))
-                #go down the rabbit hole
-                keyvalue = component(removenode(htree,activenode),htree[activenode][idx])
-                for child in push!(keyvalue[2],keyvalue[1])
-                    push!(OZ,Pair(child,sym))
-                end
-            end
-            idx = mod1(idx+1,num_neighbors)
-        end
-        lastnode = activenode
-        activenode = nextnode
-    end
-            
-    return OZ
-end
-
-function anglesofbranch(OZ,OH,node)
-    htree = OH.adj
-    boundary = OH.boundary
-    l = node.preperiod
-    initialneighbors = collect(htree[node])
-    if length(initialneighbors) < 3
-        error("$node is not a branch point")
-    end
-    neighbors = copy(initialneighbors)
-    angles = [Digit{2}[] for x in neighbors]
-    visited = []
-    while !((node,neighbors) in visited) || isempty(visited)
-        push!(visited,(node,copy(neighbors)))
-        if OZ[node] === nothing #We are on the boundary and need to use neighbor info
-            for (ii, neighb) in enumerate(neighbors)
-                if OZ[neighb] === nothing
-                    #Are we before or after the node on the boundary?
-                    nodeidx = findone(x->x==node,boundary)
-                    neighbidx = findone(x->x==neighb,boundary)
-                    if nodeidx > neighbidx
-                        push!(angles[ii],Digit{2}(0))
-                    else
-                        push!(angles[ii],Digit{2}(1))
-                    end
-                else
-                    push!(angles[ii],OZ[neighb])
-                end
-            end
-        else #We are not on the boundary and need no neighbor info
-            for angle in angles
-                push!(angle,OZ[node])
-            end
-        end
-        
-        node = shift(node)
-        for (ii, neighb) in enumerate(neighbors)
-            neighbors[ii] = neighbortowards(htree,node,shift(neighb))
-        end
-    end
-    thetas = [BinaryExpansion(digits,l) for digits in angles]
-    return thetas
-end
-
-function criticalanglesof(OZ,OH)
-    H = OH.adj
-    zero = OH.criticalpoint
-    node = shift(zero)
-    boundary = OH.boundary
-
-    initialneighb = first(collect(H[node]))
-    neighb = initialneighb
-    angles = [Digit{2}[] for x in 1:2]
-    visited = []
-    while !(node in visited)
-        push!(visited,node)
-        if OZ[node] === nothing #We are on the boundary and need to use neighbor info
-            for ii in 1:2
-                if OZ[neighb] === nothing
-                    #Are we before or after the node on the boundary?
-                    nodeidx = findone(x->x==node,boundary)
-                    neighbidx = findone(x->x==neighb,boundary)
-                    if nodeidx > neighbidx 
-                        if ii == 1
-                            push!(angles[ii],Digit{2}(0))
-                        else
-                            push!(angles[ii],Digit{2}(1))
-                        end
-                    else
-                        if ii == 1
-                            push!(angles[ii],Digit{2}(1))
-                        else
-                            push!(angles[ii],Digit{2}(0))
-                        end
-                    end
-                else
-                    push!(angles[ii],OZ[neighb])
-                end
-            end
-        else #We are not on the boundary and need no neighbor info
-            for angle in angles
-                push!(angle,OZ[node])
-            end
-        end
-        node = shift(node)
-        neighb = neighbortowards(H,node,shift(neighb))
-    end
-    thetadigits = [BinaryExpansion(digits,node.preperiod) for digits in angles]
-    return thetadigits
-end
-
-function criticalanglesof(aia::AngledInternalAddress)
-    OH = OrientedHubbardTree(aia)
-    OZ = labelonezero(OH)
-    return criticalanglesof(OZ,OH)
-end
-
-function allanglesof(OZ,OH)
-    #first we do the critical orbit
-    pairs = Dict()
-
-    H = OH.adj
-    boundary = OH.boundary
-    zero = OH.criticalpoint
-    seq = shift(zero)
-
-    angles = criticalanglesof(OZ,OH)
-    while !(seq in keys(pairs))
-        push!(pairs,Pair(seq,angles))
-        seq = shift(seq)
-        angles = [shift(angle) for angle in angles]
-    end
-
-    #next we do the periodic orbits
-    for c in characteristicset(OH)
-        angles = anglesofbranch(OZ,OH,c)
-        seq = c
-        while !(seq in keys(pairs))
-            push!(pairs,Pair(seq,angles))
-            seq = shift(seq)
-            angles = [shift(angle) for angle in angles]
-        end
-    end
-
-    push!(pairs,Pair(KneadingSequence(KneadingSymbol[B()],0),[BinaryExpansion([Digit{2}(0)],0)]))
-    push!(pairs,Pair(KneadingSequence(KneadingSymbol[A(),B()],1),[BinaryExpansion([Digit{2}(1),Digit{2}(0)],1)]))
-
-    #last we do the preperiodic branch points. This is slow!
-    for node in keys(H)
-        if !(node in keys(pairs))
-            push!(pairs,Pair(node,anglesofbranch(OZ,OH,node)))
-        end
-    end
-
-    return pairs 
-end
-
-function allanglesof(theta::Rational)
-    OH = OrientedHubbardTree(theta)
-    OZ = labelonezero(OH)
-    return allanglesof(OZ,OH)
-end
-
-function allanglesof(H::OrientedHubbardTree)
-    OZ = labelonezero(H)
-    return allanglesof(OZ,H)
-end
-
-function angle_echo(theta::Rational)
-    aia = AngledInternalAddress(theta)
-    return criticalanglesof(aia)
-end
-
-function valid_binary(theta)
-    aia = AngledInternalAddress(theta)
-    K = kneadingsequence(theta)
-    H = orientedtree(aia)
-    return binary(theta) in criticalanglesof(H,K)
-end
-
-
-
-
-
-
