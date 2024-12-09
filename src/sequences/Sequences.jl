@@ -71,13 +71,13 @@ function Base.hash(S::Sequence,h::UInt)
     return hash(h,hash(:Sequence,k))
 end
 
-function Base.show(io::IO, s::Sequence{Char})
-    str = String(s.items)
-    L = s.preperiod
+function Base.show(io::IO, K::Sequence)
+    str = join([repr(item) for item in K.items])
+    L = K.preperiod
     if L == 0
-        return print(io,"|"*str*"|")
+        return println(io,"|"*str*"|")
     else
-        return print(io,str[1:L]*"|"*str[L+1:end]*"|")
+        return println(io,str[1:L]*"|"*str[L+1:end]*"|")
     end
 end
 

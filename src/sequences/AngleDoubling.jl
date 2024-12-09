@@ -14,7 +14,7 @@ struct RationalAngle <: Number
     end
 end
 
-import Base: +, *, /, <, >, numerator, denominator
+import Base: +, *, /, <, >, numerator, denominator, convert
 
 phi::RationalAngle + theta::RationalAngle = RationalAngle(mod(phi.value+theta.value,1))
 theta::RationalAngle * s::Number = RationalAngle(mod(theta.value*s,1))
@@ -66,6 +66,10 @@ function KneadingSequence(angle::RationalAngle)
     return thetaitinerary(angle,orb)
 end
 
+function KneadingSequence(theta::Rational)
+    return KneadingSequence(RationalAngle(theta))
+end
+
 function thetaitinerary(theta::RationalAngle,angle::RationalAngle)
     return thetaitinerary(theta,orbit(angle))
 end
@@ -90,16 +94,7 @@ function thetaitinerary(theta::RationalAngle,orb::Sequence)
     return Sequence{KneadingSymbol}(itinerary,orb.preperiod)
 end
 
-function Base.show(io::IO, K::KneadingSequence)
-    str = join([repr(item) for item in K.items])
-    L = K.preperiod
-    if L == 0
-        return println(io,"|"*str*"|")
-    else
-        return println(io,str[1:L]*"|"*str[L+1:end]*"|")
-    end
-end
-
+"""An internal address is an increasing sequence of integers which describes a kneading sequence"""
 struct InternalAddress
     addr::Vector{Int}
 end
@@ -198,6 +193,7 @@ function admissible(intadd::InternalAddress)
     return admissible(KneadingSequence(intadd))
 end
 
+"""an internal address with aditional information in the form of angles which specify a cyclic ordering of kneading sequences"""
 struct AngledInternalAddress
     addr::Vector{Int}
     angles::Vector{RationalAngle}
@@ -221,6 +217,10 @@ function AngledInternalAddress(theta::RationalAngle)
 
     return AngledInternalAddress(intadd.addr, angles)
 
+end
+
+function AngledInternalAddress(theta::Rational)
+    return AngledInternalAddress(Rationalangle(theta))
 end
 
 function firstaddress(intadd::Vector{Int})
@@ -357,13 +357,15 @@ Base.Int(d::Digit) = d.value
 
 const BinaryExpansion = Sequence{Digit{2}}
 
+""" The binary expansion of an angle is a sequence of 1s and 0s which can be interpreted either as place-value representation of the angle, or as an itinerary of the angle under angle doubling.
+"""
 function BinaryExpansion(theta::RationalAngle)    
     orb = orbit(theta)
     itinerary = Digit{2}[]
     zero = Digit{2}(0)
     one = Digit{2}(1)
     for theta in orb.items
-        if theta < 1//2
+        if theta < RationalAngle(1//2)
             push!(itinerary,zero)
         else
             push!(itinerary,one)
