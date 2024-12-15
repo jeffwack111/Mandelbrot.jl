@@ -1,4 +1,3 @@
-include("HubbardTrees.jl") 
 
 "A combinatorial Hubbard tree with cyclic order at each vertex. 
 It can be constructed from an AngledInternalAddress

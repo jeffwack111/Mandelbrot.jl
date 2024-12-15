@@ -1,8 +1,3 @@
-include("RenderFractal.jl")
-include("../spidermap/SpiderMap.jl")
-include("../trees/OrientTrees.jl")
-using ColorSchemes 
-
 function mandelbrotpatch(A::Complex, B::Complex, scale::Real)
     #we will first compute the patch at the correct scale and orientation, centered at the origin
     #we will then translate the patch to to correct location and return it

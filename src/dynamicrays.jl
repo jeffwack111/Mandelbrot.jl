@@ -1,6 +1,3 @@
-include("../sequences/AngleDoubling.jl")
-include("../spidermap/SpiderFuncs.jl")
-
 struct ExternalRays
     orb::Sequence{BinaryExpansion}
     rays::Dict{BinaryExpansion,Vector{ComplexF64}}

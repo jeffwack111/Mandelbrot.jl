@@ -1,20 +1,46 @@
 module Mandelbrot
-include("trees/ShowTree.jl")
 
-export RationalAngle
-export BinaryExpansion
-export KneadingSequence
+export RationalAngle,
+       BinaryExpansion, 
+       KneadingSequence, 
+       InternalAddress, 
+       HubbardTree, 
+       AngledInternalAddress, 
+       OrientedHubbardTree, 
+       parameter,
+       treeplot,
+       spiderplot
 
-export InternalAddress
-export HubbardTree
+using ColorSchemes,
+      Colors,
+      GLMakie,
+      IterTools,
+      Primes
 
-export AngledInternalAddress
-export OrientedHubbardTree
+include("Sequences.jl")
+include("angledoubling.jl")
 
-export parameter
+include("Graphs.jl")
+include("HubbardTrees.jl")
 
-#export HyperbolicComponent
+include("orienttrees.jl")
+include("dynamicrays.jl")
+include("embedtrees.jl")
 
-#export treeplot
+include("interiorbinarydecomp.jl")
+include("juliaset.jl")
+include("lamination.jl")
+include("mandelbrotset.jl")
+
+include("spiderfuncs.jl")
+include("spidermap.jl")
+
+include("renderfractal.jl")
+include("perturb.jl")
+
+include("showrays.jl")
+include("showspider.jl")
+include("showtree.jl")
+
 
 end

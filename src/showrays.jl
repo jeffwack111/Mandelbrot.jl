@@ -1,7 +1,3 @@
-using GLMakie
-using ColorSchemes
-include("DynamicRays.jl")
-
 @recipe(RayPlot,ExtRays) do scene 
     Theme()
 end

@@ -1,6 +1,4 @@
-include("Sequences.jl")
 
-alphabet = ['*','A','B']
 
 struct RationalAngle <: Number
     value::Rational
@@ -26,6 +24,10 @@ phi::RationalAngle < theta::RationalAngle = phi.value < theta.value
 denominator(theta::RationalAngle) = denominator(theta.value)
 numerator(theta::RationalAngle) = numerator(theta.value)
 
+function Base.show(io::IO, theta::RationalAngle)
+    return print(io,theta.value)
+end
+
 function orbit(angle::RationalAngle)
     items = RationalAngle[]
 
@@ -40,7 +42,7 @@ function orbit(angle::RationalAngle)
     
 end
 
-struct KneadingSymbol <: Integer
+struct KneadingSymbol #<: Integer <--- got rid of this due to issues with converting to a string
     value::Int
     function KneadingSymbol(value::Int)
         0 <= value <=2  || error("Value must be in range [0, 2]")
@@ -50,6 +52,8 @@ end
 
 #necessary for using kneading sequences as dictionary keys
 Base.hash(d::KneadingSymbol,h::UInt64) = hash(d.value,h)
+
+alphabet = ['*','A','B']
 
 function KneadingSymbol(c::Char)
     return KneadingSymbol(first(findall(x->x==c,alphabet))-1)
@@ -220,7 +224,20 @@ function AngledInternalAddress(theta::RationalAngle)
 end
 
 function AngledInternalAddress(theta::Rational)
-    return AngledInternalAddress(Rationalangle(theta))
+    return AngledInternalAddress(RationalAngle(theta))
+end
+
+function Base.show(io::IO, AIA::AngledInternalAddress)
+    address = ""
+    for ii in eachindex(AIA.addr)
+        address *= repr(AIA.addr[ii])
+        if ii < lastindex(AIA.addr)#this will return true if num is not the last element because addr has no repeats
+            address *= "———"
+            address *= repr(AIA.angles[ii])
+            address *= "——>"
+        end
+    end
+    return print(io,"Angled Internal Address"*"\n"*address)
 end
 
 function firstaddress(intadd::Vector{Int})

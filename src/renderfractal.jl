@@ -1,5 +1,3 @@
-using GLMakie
-
 struct EscapeTimeProblem
     z0::Number
     f::Function

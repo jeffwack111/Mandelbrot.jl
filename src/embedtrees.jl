@@ -1,7 +1,3 @@
-include("OrientTrees.jl")
-include("../spidermap/SpiderMap.jl")
-include("../parameters/DynamicRays.jl")
-
 struct HyperbolicComponent
     criticalpoint::Sequence
     adj::Dict{KneadingSequence,Vector{KneadingSequence}}

@@ -1,10 +1,3 @@
-using GLMakie
-using ColorSchemes
-include("EmbedTrees.jl")
-include("../spidermap/SpiderMap.jl")
-include("../parameters/DynamicRays.jl")
-include("../parameters/RenderFractal.jl")
-
 @recipe(TreePlot,EHT) do scene #TODO add kwargs to toggle plotting the julia set and the external rays
     Theme()
 end

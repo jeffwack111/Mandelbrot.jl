@@ -1,10 +1,6 @@
 #Algorithms from https://eudml.org/doc/283172
 #Existence of quadratic Hubbard trees
 #Henk Bruin, Alexandra Kafll, Dierk Schleicher
-
-include("../sequences/AngleDoubling.jl") 
-include("Graphs.jl")
-
 abstract type AbstractHubbardTree <: Graph end
 
 function criticalpoint(H::AbstractHubbardTree)

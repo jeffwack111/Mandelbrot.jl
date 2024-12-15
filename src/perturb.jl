@@ -1,5 +1,3 @@
-using GLMakie
-include("MandelbrotSet.jl")
 
 function newtriple(X,(A,B,C))
     newA = 2*X*A+1

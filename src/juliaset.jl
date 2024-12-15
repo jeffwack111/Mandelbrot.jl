@@ -1,5 +1,3 @@
-include("RenderFractal.jl")
-
 function assignbinary((iter,z))
     if isnan(iter)
         return NaN

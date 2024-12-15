@@ -1,6 +1,3 @@
-using GLMakie
-include("SpiderFuncs.jl")
-
 A = 1.0-3.0im
 B = -2.0+1.0im
 

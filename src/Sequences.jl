@@ -1,6 +1,3 @@
-using Primes
-using IterTools
-
 struct Sequence{T}
     items::Vector{T}
     preperiod::Int
@@ -72,12 +69,12 @@ function Base.hash(S::Sequence,h::UInt)
 end
 
 function Base.show(io::IO, K::Sequence)
-    str = join([repr(item) for item in K.items])
+    str = join([string(item) for item in K.items])
     L = K.preperiod
     if L == 0
-        return println(io,"|"*str*"|")
+        return print(io,"|"*str*"|")
     else
-        return println(io,str[1:L]*"|"*str[L+1:end]*"|")
+        return print(io,str[1:L]*"|"*str[L+1:end]*"|")
     end
 end
 

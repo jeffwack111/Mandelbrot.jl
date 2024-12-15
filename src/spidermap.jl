@@ -1,7 +1,3 @@
-using IterTools
-include("SpiderFuncs.jl")
-include("../sequences/AngleDoubling.jl")
-
 struct Spider
     angle::Rational
     orbit::Sequence{Rational}
