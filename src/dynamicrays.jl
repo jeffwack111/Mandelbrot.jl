@@ -46,7 +46,7 @@ function dynamicrays(c::Complex,angle::BinaryExpansion,R::Real,res::Int,depth::I
     radii = collect(LinRange(R,sqrt(R),res))
 
     #similar to standard spider but is outer
-    rays = Sequence{Vector{ComplexF64}}([exp(2im*pi*Rational(theta)).*radii for theta in orb.items],orb.preperiod)
+    rays = Sequence{Vector{ComplexF64}}([exp(2im*pi*RationalAngle(theta).value).*radii for theta in orb.items],orb.preperiod)
 
     for jj in 1:depth
         for (target,source) in goesto(rays)

@@ -4,16 +4,16 @@ end
 
 function Makie.plot!(myplot::TreePlot)
     EHT = myplot.EHT[]
-    (EdgeList,Nodes) = adjlist(EHT.adj)
-    criticalorbit = orbit(EHT.criticalpoint)
+    (EdgeList,Nodes) = adjlist(EHT.htree.adj)
+    criticalorbit = orbit(EHT.htree.criticalpoint)
 
     labels = []
     nodecolors = []
     for node in Nodes
         firstchar = node.items[1]
-        if firstchar == star()
+        if firstchar == KneadingSymbol('*')
             push!(nodecolors,"black")
-        elseif firstchar == A() #we are fully in one of the 4 regions
+        elseif firstchar == KneadingSymbol('A') #we are fully in one of the 4 regions
             if EHT.onezero[node] == Digit{2}(0)
                 push!(nodecolors,"blue")
             elseif EHT.onezero[node] === nothing
@@ -21,7 +21,7 @@ function Makie.plot!(myplot::TreePlot)
             elseif EHT.onezero[node] == Digit{2}(1)
                 push!(nodecolors,"green")
             end
-        elseif firstchar == B()
+        elseif firstchar == KneadingSymbol('B')
             if EHT.onezero[node] == Digit{2}(0)
                 push!(nodecolors,"red")
             elseif EHT.onezero[node] === nothing
@@ -81,6 +81,9 @@ function Makie.plot!(myplot::TreePlot)
     return myplot
 end
 
+function treeplot(theta::Rational)
+    return treeplot(HyperbolicComponent(theta))
+end
 
 function plottree!(scene, H::HubbardTree)
 

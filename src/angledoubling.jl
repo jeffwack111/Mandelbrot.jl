@@ -340,7 +340,7 @@ function numembeddings(theta::Rational)
     return numembeddings(internaladdress(theta))
 end
 
-function period(theta::Rational)
+function period(theta::RationalAngle)
     return orbit(theta).period
 end
 

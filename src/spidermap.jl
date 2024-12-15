@@ -1,6 +1,6 @@
 struct Spider
-    angle::Rational
-    orbit::Sequence{Rational}
+    angle::RationalAngle
+    orbit::Sequence{RationalAngle}
     kneading_sequence::KneadingSequence
     legs::Vector{Vector{ComplexF64}}
 end
@@ -10,7 +10,7 @@ function Base.show(io::IO, S::Spider)
     return println("A "*repr(S.angle)*"-spider with kneading sequence "*repr(S.kneading_sequence)*" and "*repr(npoints)*" points.")
 end
 
-function standardspider(theta::Rational)
+function standardspider(theta::RationalAngle)
     orb = orbit(theta)
     K = thetaitinerary(theta,orb) #the kneading sequence is calculated like so to avoid recalculating the orbit of theta
     legs = standardlegs(orb)
@@ -21,15 +21,10 @@ function standardlegs(orbit::Sequence)
     r = collect(LinRange(100,1,10))  #NOTE - it may be better to keep this as a 'linrange' but I don't understand what that means
     legs  = Vector{ComplexF64}[]
     for theta in orbit.items
-        push!(legs,(cos(theta*2*pi)+1.0im*sin(theta*2*pi)) .* r)
+        push!(legs,(cos(theta.value*2*pi)+1.0im*sin(theta.value*2*pi)) .* r)
     end
     legs[1] = legs[1] .- legs[1][end]
     return legs
-end
-
-function standardlegs(angle::Rational)
-    info = SpiderInfo(angle)
-    return standardlegs(info)
 end
 
 function grow!(legs::Vector{Vector{ComplexF64}},scale::Real,num::Int)
@@ -72,11 +67,11 @@ function mapspider!(S::Spider)
     #this angle lays in region A by definition. 
 
     if a/2 < theta1 && theta1 < (a+1)/2
-        cregion = A()
-        dregion = B()
+        cregion = KneadingSymbol('A')
+        dregion = KneadingSymbol('B')
     else
-        cregion = B()
-        dregion = A()
+        cregion = KneadingSymbol('B')
+        dregion = KneadingSymbol('A')
     end
     
     for ii in 2:n-1
@@ -106,7 +101,7 @@ function mapspider!(S::Spider)
         thetau = (angle(u)/(2*pi)+1)%1
         
         if abs2(thetau - a/2) < abs2(thetau - (a+1)/2)
-            if cregion == A()
+            if cregion == KneadingSymbol('A')
                 if S.kneading_sequence.items[end] == '2'
                     newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
@@ -120,7 +115,7 @@ function mapspider!(S::Spider)
                 end
             end
         else
-            if cregion == A()
+            if cregion == KneadingSymbol('A')
                 if S.kneading_sequence.items[end] == '1'
                     newLegs[end] = path_sqrt(S.legs[1]./λ)
                 else
@@ -183,7 +178,7 @@ function parameter(S0::Spider,max_iter::Int)
     for ii in 1:max_iter
         mapspider!(S)
         c = S.legs[2][end]/2
-        println(repr(c)*" delta "*repr(abs(c-c_last)))
+        #println(repr(c)*" delta "*repr(abs(c-c_last)))
         if abs(c-c_last)<(1e-15)
             return c
         end

@@ -3,7 +3,7 @@
 #Henk Bruin, Alexandra Kafll, Dierk Schleicher
 abstract type AbstractHubbardTree <: Graph end
 
-function criticalpoint(H::AbstractHubbardTree)
+function criticalpoint(H)
     return first(filter(x->x[1]==KneadingSymbol('*'),vertices(H)))
 end
 
@@ -154,8 +154,9 @@ function findone(f,A)
     end
 end
 
-function isbetween(htree::AbstractHubbardTree,a,b,c)
-    zero = htree.criticalpoint
+#is this for some reason better than a graph search?
+function isbetween(htree,a,b,c) 
+    zero = criticalpoint(htree)
     K = shift(zero)
     (type,vertex) = iteratetriod(K,(a,b,c))
     if type == "flat" && vertex == a

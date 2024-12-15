@@ -1,9 +1,7 @@
 struct HyperbolicComponent
-    criticalpoint::Sequence
-    adj::Dict{KneadingSequence,Vector{KneadingSequence}}
-    boundary::Vector{KneadingSequence}
+    htree::OrientedHubbardTree
     onezero::Dict{KneadingSequence, Union{Nothing,Digit{2}}}
-    angle::Rational
+    angle::RationalAngle
     rays::Dict{BinaryExpansion,Vector{ComplexF64}}
     parameter::ComplexF64
     vertices::Dict{KneadingSequence, ComplexF64} #maps each vertex in the tree to a point in the plane
@@ -17,7 +15,7 @@ function HyperbolicComponent(OHT::OrientedHubbardTree)
 
     criticalorbit = orbit(OHT.criticalpoint) #This is a sequence orbit
 
-    theta = Rational(first(criticalanglesof(OZ,OHT)))
+    theta = RationalAngle(first(criticalanglesof(OZ,OHT)))
     c = parameter(standardspider(theta),250)
 
     #critical orbit
@@ -37,8 +35,8 @@ function HyperbolicComponent(OHT::OrientedHubbardTree)
         end
     end
     
-    merge!(rays,dynamicrays(c,BinaryExpansion(1//2),100,10,40))
-    merge!(rays,dynamicrays(c,BinaryExpansion(0//1),100,10,40))
+    merge!(rays,dynamicrays(c,BinaryExpansion(RationalAngle(1//2)),100,10,40))
+    merge!(rays,dynamicrays(c,BinaryExpansion(RationalAngle(0//1)),100,10,40))
 
     paramorbit = [0.0+0.0im]
     n = period(theta)
@@ -50,8 +48,8 @@ function HyperbolicComponent(OHT::OrientedHubbardTree)
 
     zvalues = Dict{Sequence,ComplexF64}()
     for node in keys(OHT.adj)
-        if star() in node.items #then it is in the critical orbit
-            idx = findone(x->x==star(),node.items)
+        if KneadingSymbol('*') in node.items #then it is in the critical orbit
+            idx = findone(x->x==KneadingSymbol('*'),node.items)
             push!(zvalues,Pair(node,paramorbit[mod1(n-idx+2,n)]))
         else
             list = [rays[angle][end] for angle in anglelist[node]]
@@ -59,7 +57,15 @@ function HyperbolicComponent(OHT::OrientedHubbardTree)
         end
     end
     E = standardedges(OHT.adj,OHT.criticalpoint,zvalues)
-    return HyperbolicComponent(OHT.criticalpoint,OHT.adj,OHT.boundary,OZ,theta,rays,c,zvalues,E)
+    return HyperbolicComponent(OHT,OZ,theta,rays,c,zvalues,E)
+end
+
+function HyperbolicComponent(theta::Rational)
+    H0 = HyperbolicComponent(OrientedHubbardTree(theta))
+    for ii in 1:5
+        refinetree!(H0)
+    end
+    return H0
 end
 
 function Base.show(io::IO,H::HyperbolicComponent)
@@ -79,8 +85,8 @@ function standardedges(adj,zero,zvalues)
 end
 
 function longpath(EHT, start, finish)
-    nodes = nodepath(EHT.adj, start, finish)
-    edges = edgepath(EHT.adj, start, finish)
+    nodes = nodepath(EHT.htree, start, finish)
+    edges = edgepath(EHT.htree, start, finish)
 
     edgevectors = EHT.edges
 
