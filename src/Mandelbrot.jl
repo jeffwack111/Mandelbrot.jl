@@ -9,7 +9,8 @@ export RationalAngle,
        OrientedHubbardTree, 
        parameter,
        treeplot,
-       spiderplot
+       spiderplot,
+       brotplot
 
 using ColorSchemes,
       Colors,

@@ -1,4 +1,4 @@
-function mandelbrotpatch(A::Complex, B::Complex, scale::Real)
+function mandelbrotpatch(A::Complex, B::Complex, scale::Real,size::Int)
     #we will first compute the patch at the correct scale and orientation, centered at the origin
     #we will then translate the patch to to correct location and return it
 
@@ -11,8 +11,8 @@ function mandelbrotpatch(A::Complex, B::Complex, scale::Real)
     to_top = 1.0im*to_side
     #points from the origin to the top of the frame
 
-    horizontal_axis = LinRange(-to_side,to_side,1000)
-    vertical_axis = LinRange(-to_top,to_top,1000)
+    horizontal_axis = LinRange(-to_side,to_side,size)
+    vertical_axis = LinRange(-to_top,to_top,size)
 
     origin_patch = transpose(vertical_axis) .+ horizontal_axis
     #we want a matrix whose i,jth element is H[i] + V[j]
@@ -27,40 +27,25 @@ function showmandelbrot((A, B), scale::Real)
     return heatmap(pic,nan_color = RGBAf(0,0,0,1),colormap = :PRGn_9)
 end
 
-function showm(angle1::Rational,angle2::Rational)
-    @time c1 = spideriterate(angle1,500)
+function brotplot(angle1,angle2)
+    @time c1 = parameter(RationalAngle(angle1),500)
     println(c1)
-    @time c2 = spideriterate(angle2,500)
+    @time c2 = parameter(RationalAngle(angle2),500)
     println(c2)
 
-    M = mandelbrotpatch(c1,c2,10)
+    M = mandelbrotpatch(c1,c2,10,500)
     PA = mproblem_array(M,escape(100),500)
 
-    fig = Figure()
-    scene = Scene(camera=campixel!, resolution=(1000,1000))
-    ax = Axis(scene,aspect = 1)
-    hidedecorations!(ax)
-    hidespines!(ax)
-
-    @time heatmap!(scene,mod.([x[1] for x in escapetime.(PA)],50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
-
-    return scene
+    return heatmap(mod.([x[1] for x in escapetime.(PA)],50),nan_color = RGBAf(0,0,0,1),colormap = :Set3_12)
 end
 
 
-function showm(aia::AngledInternalAddress)
-    @time theta1 = first(anglesof(aia))
-    println(theta1)
-    @time theta2 = first(anglesof(bifurcate(aia)))
-    println(theta2)
-    return showm(theta1,theta2)
-end
-    
-function showm(theta::Rational)
-    aia = AngledInternalAddress(theta)
-    @time theta2 = angleof(first(criticalanglesof(bifurcate(aia))))
-    println(theta2)
-    return showm(theta,theta2)
+function brotplot(aia::AngledInternalAddress)
+    @time theta1 = first(criticalanglesof(aia))
+    println(RationalAngle(theta1))
+    @time theta2 = first(criticalanglesof(bifurcate(aia)))
+    println(RationalAngle(theta2))
+    return brotplot(theta1,theta2)
 end
 
 function movie(list)

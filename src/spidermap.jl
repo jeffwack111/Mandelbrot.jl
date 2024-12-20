@@ -10,7 +10,7 @@ function Base.show(io::IO, S::Spider)
     return println("A "*repr(S.angle)*"-spider with kneading sequence "*repr(S.kneading_sequence)*" and "*repr(npoints)*" points.")
 end
 
-function standardspider(theta::RationalAngle)
+function standardspider(theta)
     orb = orbit(theta)
     K = thetaitinerary(theta,orb) #the kneading sequence is calculated like so to avoid recalculating the orbit of theta
     legs = standardlegs(orb)
@@ -187,6 +187,6 @@ function parameter(S0::Spider,max_iter::Int)
     return S.legs[2][end]/2 
 end
 
-function parameter(theta::Rational,max_iter::Int)
+function parameter(theta,max_iter::Int)
     return parameter(standardspider(theta),max_iter)
 end
